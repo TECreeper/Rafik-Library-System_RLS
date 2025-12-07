@@ -1,0 +1,557 @@
+﻿
+@page "/overdue"
+@using Library_website.Components.Layout
+@layout EmptyLayout
+@rendermode InteractiveServer
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<div class="dashboard-container">
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
+        </div>
+        
+        <div class="search-box-sidebar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search..." />
+        </div>
+
+        <nav class="sidebar-nav">
+            <p class="nav-label">Navigation</p>
+            <a href="/" class="nav-item"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+            <a href="/books" class="nav-item"><i class="fa-solid fa-book"></i> Books</a>
+            <a href="/members" class="nav-item"><i class="fa-solid fa-users"></i> Members</a>
+            <a href="/borrow" class="nav-item"><i class="fa-solid fa-arrow-right-arrow-left"></i> Borrow & Returns</a>
+            
+            <p class="nav-label">Alerts</p>
+            <a href="/overdue" class="nav-item active alert-link">
+                <i class="fa-solid fa-circle-exclamation"></i> Overdues
+                <span class="sidebar-badge">@OverdueList.Count</span>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="top-bar">
+            <div class="breadcrumbs">
+                <h2>Overdue Books</h2>
+                <span>Home > Alerts > Overdue</span>
+            </div>
+            <div class="user-actions">
+                <button class="btn btn-danger-outline" @onclick="SendAllReminders">
+                    <i class="fa-regular fa-bell"></i> Send All Reminders
+                </button>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="card stat-card red-border">
+                <div class="stat-icon red-bg"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="stat-info">
+                    <span class="label">Total Overdue</span>
+                    <span class="value">@OverdueList.Count</span>
+                </div>
+            </div>
+
+            <div class="card stat-card orange-border">
+                <div class="stat-icon orange-bg"><i class="fa-solid fa-clock"></i></div>
+                <div class="stat-info">
+                    <span class="label">Avg. Delay</span>
+                    <span class="value">12 Days</span>
+                </div>
+            </div>
+
+            <div class="card stat-card blue-border">
+                <div class="stat-icon blue-bg"><i class="fa-solid fa-coins"></i></div>
+                <div class="stat-info">
+                    <span class="label">Total Fines</span>
+                    <span class="value">$@OverdueList.Sum(x => x.Fine).00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search by member or book..." />
+            </div>
+            <div class="filter-actions">
+                <select class="form-select">
+                    <option>All Delays</option>
+                    <option>1-7 Days</option>
+                    <option>8-30 Days</option>
+                    <option>30+ Days (Severe)</option>
+                </select>
+                <button class="btn btn-outline"><i class="fa-solid fa-filter"></i> Filter</button>
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Member Details</th>
+                        <th>Book Info</th>
+                        <th>Due Date</th>
+                        <th>Days Late</th>
+                        <th>Fine ($)</th>
+                        <th>Status</th>
+                        <th style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in OverdueList)
+                    {
+                        <tr>
+                            <td>
+                                <div class="profile-cell">
+                                    <img src="@($"https://ui-avatars.com/api/?name={item.MemberName}&background=random&color=fff")" class="avatar" />
+                                    <div class="info">
+                                        <span class="name">@item.MemberName</span>
+                                        <span class="sub">@item.MemberPhone</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="info">
+                                    <span class="name">@item.BookTitle</span>
+                                    <span class="sub">ISBN: @item.ISBN</span>
+                                </div>
+                            </td>
+                            <td class="date-cell">@item.DueDate.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <span class="delay-badge @(item.DaysLate > 30 ? "severe" : "warning")">
+                                    @item.DaysLate Days
+                                </span>
+                            </td>
+                            <td class="fine-cell">$@item.Fine</td>
+                            <td><span class="status-dot"></span> Pending</td>
+                            <td class="actions-cell">
+                                <button class="action-btn email" title="Send Reminder Email"><i class="fa-regular fa-envelope"></i></button>
+                                <button class="action-btn return" title="Process Return"><i class="fa-solid fa-rotate-left"></i></button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+</div>
+
+@code {
+    public class OverdueModel
+    {
+        public string MemberName { get; set; }
+        public string MemberPhone { get; set; }
+        public string BookTitle { get; set; }
+        public string ISBN { get; set; }
+        public DateTime DueDate { get; set; }
+        public int DaysLate { get; set; }
+        public decimal Fine { get; set; }
+    }
+
+    List<OverdueModel> OverdueList = new List<OverdueModel>
+    {
+
+    };
+
+    private void SendAllReminders()
+    {
+        // هنا يمكن وضع كود إرسال إيميلات جماعية
+    }
+}
+
+<style>
+    :root {
+        --primary: #007bff;
+        --danger: #dc3545;
+        --warning: #ffc107;
+        --sidebar-bg: #fff;
+        --main-bg: #f4f7fa;
+        --text: #333;
+        --radius: 12px;
+    }
+
+    * {
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+        margin: 0;
+        background: var(--main-bg);
+        color: var(--text);
+    }
+
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        min-height: 100vh;
+    }
+
+    /* Sidebar (Standard) */
+    .sidebar {
+        background: var(--sidebar-bg);
+        padding: 20px;
+        border-right: 1px solid #eee;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+    }
+
+    .sidebar-header h3 {
+        color: var(--primary);
+        margin: 0 0 20px 0;
+        font-size: 1.2rem;
+    }
+
+    .nav-label {
+        font-size: 0.8rem;
+        color: #aaa;
+        margin: 20px 0 10px 0;
+        font-weight: bold;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        text-decoration: none;
+        color: #555;
+        margin-bottom: 5px;
+        border-radius: 8px;
+        position: relative;
+    }
+
+        .nav-item:hover {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .nav-item.active {
+            background: #fff0f0;
+            color: var(--danger);
+        }
+    /* Active color for Overdue is Red */
+
+    .sidebar-badge {
+        background: var(--danger);
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+        position: absolute;
+        right: 10px;
+    }
+
+    .search-box-sidebar {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 8px;
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+        .search-box-sidebar input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+        }
+
+    /* Main Content */
+    .main-content {
+        padding: 30px;
+    }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .breadcrumbs h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: var(--danger);
+    }
+    /* Red Title */
+    .breadcrumbs span {
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-left: 4px solid transparent;
+    }
+
+    .red-border {
+        border-left-color: var(--danger);
+    }
+
+    .orange-border {
+        border-left-color: var(--warning);
+    }
+
+    .blue-border {
+        border-left-color: var(--primary);
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .red-bg {
+        background: #fde8e8;
+        color: var(--danger);
+    }
+
+    .orange-bg {
+        background: #fff8e1;
+        color: #f57c00;
+    }
+
+    .blue-bg {
+        background: #e3f2fd;
+        color: var(--primary);
+    }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .stat-info .label {
+            font-size: 0.85rem;
+            color: #888;
+            display: flex;
+            justify-content: center;
+        }
+
+        .stat-info .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+        }
+
+    /* Buttons */
+    .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-danger-outline {
+        background: white;
+        border: 1px solid var(--danger);
+        color: var(--danger);
+    }
+
+        .btn-danger-outline:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+    .btn-outline {
+        background: white;
+        border: 1px solid #ddd;
+        color: #333;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: var(--radius);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .search-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f8f9fa;
+        padding: 8px 15px;
+        border-radius: 8px;
+        width: 300px;
+        border: 1px solid #eee;
+    }
+
+        .search-wrapper input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+        }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .form-select {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        outline: none;
+    }
+
+    /* Table */
+    .table-card {
+        background: white;
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .styled-table thead {
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .styled-table th {
+            text-align: left;
+            padding: 15px 20px;
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .styled-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f9f9f9;
+            vertical-align: middle;
+        }
+
+    .profile-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+    }
+
+    .info {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .info .name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .info .sub {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+    .date-cell {
+        color: var(--danger);
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .fine-cell {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .delay-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+        .delay-badge.warning {
+            background: #fff8e1;
+            color: #f57c00;
+        }
+
+        .delay-badge.severe {
+            background: #fde8e8;
+            color: #c62828;
+        }
+
+    .status-dot {
+        height: 8px;
+        width: 8px;
+        background-color: var(--danger);
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        margin-right: 5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .action-btn.email {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .action-btn.return {
+            background: #e8f5e9;
+            color: #28a745;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+</style>

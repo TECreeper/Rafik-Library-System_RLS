@@ -1,0 +1,700 @@
+﻿@page "/"
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@rendermode InteractiveServer
+@using MyLibraryApp.Models
+@using MyLibraryApp.Data
+@inject BookService BookService
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
+        </div>
+
+        <div class="search-box-sidebar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search catalog..." />
+        </div>
+
+        <nav class="sidebar-nav">
+            <p class="nav-label">Navigation</p>
+            <a href="#" class="nav-item active"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+            <a href="/books" class="nav-item"><i class="fa-solid fa-book"></i> Books</a>
+            <a href="/members" class="nav-item"><i class="fa-solid fa-users"></i> Members</a>
+            <a href="/borrow" class="nav-item"><i class="fa-solid fa-arrow-right-arrow-left"></i> Borrow & Returns</a>
+            <p class="nav-label">Alerts</p>
+            <a href="/overdue" class="nav-item alert-link">
+                <i class="fa-solid fa-circle-exclamation"></i> Overdues
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="breadcrumbs">
+                <h2>Library Management Dashboard</h2>
+                <span>Home > Dashboard</span>
+            </div>
+            <div class="user-actions">
+                <div class="search-top">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Search books, members..." />
+                </div>
+                <button class="icon-btn"><i class="fa-regular fa-bell"></i></button>
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=Al+Rafi&background=0D8ABC&color=fff" alt="User" />
+                    <div class="user-info">
+                        <span class="name">AL Rafi</span>
+                        <span class="role">Head Librarian</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-grid">
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-header">Total Books <i class="fa-solid fa-book"></i></div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-sub">Cataloged items</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">Borrowed Books <i class="fa-regular fa-bookmark"></i></div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-badge green">+4.2% vs last week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">Overdue Books <i class="fa-regular fa-clock"></i></div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-badge orange">Action needed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">Total Members <i class="fa-solid fa-users"></i></div>
+                    <div class="stat-value">9,842</div>
+                    <div class="stat-sub">All registered</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-outline" @onclick="OpenModal">
+                        <i class="fa-solid fa-plus"></i> Add Book
+                    </button>
+
+                    <button class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send Reminders</button>
+                </div>
+            </div>
+
+            <div class="alert-banner">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span><strong>Overdue spike:</strong> 34 books overdue for 14+ days. Consider sending reminders.</span>
+            </div>
+
+            <div class="charts-row">
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3>Borrowed vs. Returned</h3>
+                        <div class="legend">
+                            <span class="dot blue"></span> Borrowed
+                            <span class="dot green"></span> Returned
+                        </div>
+                    </div>
+                    <div class="chart-placeholder line-chart-mockup">
+                        <div class="line-mock"></div>
+                        <div class="months">
+                            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3>Books per Category</h3>
+                        <div class="legend-tags">
+                            <span class="tag">Fiction</span>
+                            <span class="tag">Academic</span>
+                        </div>
+                    </div>
+                    <div class="chart-placeholder bar-chart-mockup">
+                        <div class="bar" style="height: 60%; background: #007bff;"></div>
+                        <div class="bar" style="height: 40%; background: #ffc107;"></div>
+                        <div class="bar" style="height: 80%; background: #28a745;"></div>
+                        <div class="bar" style="height: 30%; background: #fd7e14;"></div>
+                        <div class="bar" style="height: 50%; background: #dc3545;"></div>
+                    </div>
+                    <div class="months bar-labels">
+                        <span>Fic</span><span>NonFic</span><span>Kids</span><span>Acad</span><span>Other</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lists-row">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-regular fa-star"></i> Most Borrowed Books</h3>
+                        <span class="sub-text">Top 5 by count</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Recently Added Books</h3>
+                    </div>
+                    <div class="recently-added-section">
+                        <div class="books-grid">
+                            @foreach (var book in Books)
+                            {
+                                <div class="list-item ">
+                                    <h4 class="title">@book.Title</h4>
+                                    <p>By: @book.Author</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+@if (ShowModal)
+{
+    <div class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Add New Book</h3>
+                <button class="close-btn" @onclick="CloseModal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Title</label>
+                    <input type="text" class="form-control" placeholder="Book Name" @bind="newBook.Title" />
+                </div>
+                <div class="input-group">
+                    <label>Author</label>
+                    <input type="text" class="form-control" placeholder="Author Name" @bind="newBook.Author" />
+                </div>
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>ID</label>
+                        <input type="text" class="form-control" placeholder="ID" />
+                    </div>
+                    <div class="input-group">
+                        <label>Category</label>
+                        <select class="form-control"><option>Fiction</option><option>Science</option></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="CloseModal">Cancel</button>
+                <button class="btn btn-primary" @onclick="SaveBook">Save</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Book> Books = new List<Book>();
+    private Book newBook = new Book();
+    private bool ShowModal = false;
+
+    private void OpenModal()
+    {
+        newBook = new Book(); // reset form
+        ShowModal = true;
+    }
+
+    private void CloseModal()
+    {
+        ShowModal = false;
+    }
+
+    private void SaveBook()
+    {
+        // minimal validation: require at least a title or author
+        if (string.IsNullOrWhiteSpace(newBook.Title) && string.IsNullOrWhiteSpace(newBook.Author))
+        {
+            CloseModal();
+            return;
+        }
+
+        // add to top of recently added list
+        Books.Insert(0, newBook);
+
+        // reset and close modal
+        newBook = new Book();
+        CloseModal();
+    }
+}
+
+
+<style>
+    :root {
+        --primary: #007bff;
+        --sidebar-bg: #ffffff;
+        --main-bg: #f4f7fa;
+        --text-dark: #333;
+        --text-light: #888;
+        --border-radius: 12px;
+        --shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    * {
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+        margin: 0;
+        background-color: var(--main-bg);
+        color: var(--text-dark);
+    }
+
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: 250px 1fr;
+        min-height: 100vh;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+        background: var(--sidebar-bg);
+        padding: 20px;
+        border-right: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .sidebar-header h3 {
+        margin: 0;
+        color: var(--primary);
+        font-size: 1.2rem;
+    }
+
+    .search-box-sidebar {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-light);
+    }
+
+        .search-box-sidebar input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+        }
+
+    .nav-label {
+        font-size: 0.8rem;
+        color: #aaa;
+        margin-bottom: 5px;
+        margin-top: 15px;
+        font-weight: 600;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 15px;
+        text-decoration: none;
+        color: #555;
+        border-radius: 8px;
+        transition: 0.2s;
+        margin-bottom: 5px;
+    }
+
+        .nav-item:hover {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+    /* Main Content Styles */
+    .main-content {
+        padding: 20px 30px;
+        overflow-y: auto;
+    }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .breadcrumbs h2 {
+        margin: 0 0 5px 0;
+        font-size: 1.4rem;
+    }
+
+    .breadcrumbs span {
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    .user-actions {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .search-top {
+        background: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        border: 1px solid #ddd;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 300px;
+    }
+
+        .search-top input {
+            border: none;
+            outline: none;
+            width: 100%;
+        }
+
+    .icon-btn {
+        background: white;
+        border: 1px solid #ddd;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .user-profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+    .user-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .user-info .name {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .user-info .role {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+    /* Widgets Grid */
+    .content-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* Stats Row */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr) auto;
+        gap: 20px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .stat-header {
+        font-size: 0.85rem;
+        color: var(--text-light);
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .stat-sub {
+        font-size: 0.8rem;
+        color: #aaa;
+    }
+
+    .stat-badge {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    .green {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .orange {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .btn {
+        padding: 10px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-outline {
+        background: white;
+        border: 1px solid #ddd;
+        color: var(--text-dark);
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+        background: #ff8800;
+        color: white;
+        padding: 15px;
+        border-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    /* Charts Row */
+    .charts-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+    }
+
+    .card {
+        background: white;
+        padding: 20px;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+    /* Mockup Charts Visuals */
+    .chart-placeholder {
+        height: 150px;
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+    }
+
+    .line-chart-mockup {
+        border-bottom: 1px solid #eee;
+        border-left: 1px solid #eee;
+    }
+
+    .line-mock {
+        position: absolute;
+        top: 40%;
+        left: 10%;
+        right: 10%;
+        height: 2px;
+        background: #ddd;
+        background: linear-gradient(90deg, rgba(0,123,255,0) 0%, rgba(0,123,255,1) 100%);
+        transform: rotate(-5deg);
+    }
+
+    .bar {
+        width: 30px;
+        border-radius: 4px 4px 0 0;
+    }
+
+    .months span {
+        font-size: 0.7rem;
+        color: #aaa;
+    }
+
+    .bar-labels {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 5px;
+    }
+
+    /* Lists Row */
+    .lists-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .list-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f9f9f9;
+        gap: 15px;
+    }
+
+    .rank {
+        font-weight: bold;
+        color: #ccc;
+        width: 20px;
+    }
+
+    .list-item .title {
+        flex-grow: 1;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .book-cover {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .list-item .date {
+        font-size: 0.8rem;
+        color: #aaa;
+    }
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-box {
+        background: white;
+        width: 450px;
+        border-radius: 12px;
+        overflow: hidden;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .modal-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        background: #f8f9fa;
+    }
+
+        .modal-header h3 {
+            margin: 0;
+        }
+
+    .close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #888;
+    }
+
+    .modal-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .input-group label {
+        display: block;
+        margin-bottom: -10px;
+        margin-right: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        outline: none;
+    }
+
+    .row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    @@keyframes slideDown {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+</style>

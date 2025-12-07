@@ -1,0 +1,582 @@
+﻿@page "/members"
+@using Library_website.Components.Layout
+@layout EmptyLayout
+@using MyLibraryApp.Models
+@using MyLibraryApp.Data
+@inject MemberService MemberService
+@rendermode InteractiveServer
+@* استخدمنا EmptyLayout لكي لا يتعارض مع أي تصميم خارجي، لأننا سنضع التصميم كاملاً هنا *@
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<div class="dashboard-container">
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
+        </div>
+
+        <div class="search-box-sidebar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search catalog..." />
+        </div>
+
+        <nav class="sidebar-nav">
+            <p class="nav-label">Navigation</p>
+            <a href="/" class="nav-item"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+            <a href="/books" class="nav-item"><i class="fa-solid fa-book"></i> Books</a>
+            <a href="#" class="nav-item active"><i class="fa-solid fa-users"></i> Members</a>
+            <a href="/borrow" class="nav-item"><i class="fa-solid fa-arrow-right-arrow-left"></i> Borrow & Returns</a>
+            <p class="nav-label">Alerts</p>
+            <a href="/overdue" class="nav-item alert-link">
+                <i class="fa-solid fa-circle-exclamation"></i> Overdues
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="top-bar">
+            <div class="breadcrumbs">
+                <h2>Members Management</h2>
+                <span>Home > Members</span>
+            </div>
+            <div class="user-actions">
+                <button @onclick="OpenMemberModal" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add New Member</button>
+            </div>
+        </header>
+
+        <div class="filter-bar">
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search by name, email, ID..." />
+            </div>
+            <div class="filter-actions">
+                <select class="form-select">
+                    <option>All Roles</option>
+                    <option>Admin</option>
+                    <option>Member</option>
+                </select>
+                <select class="form-select">
+                    <option>All Status</option>
+                    <option>Active</option>
+                    <option>Banned</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Contact Info</th>
+                        <th>Role</th>
+                        <th style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var member in MembersList)
+                    {
+                        <tr>
+                            <td>
+                                <div class="member-profile">
+                                    <img src="@($"https://ui-avatars.com/api/?name={member.Name}&background=random&color=fff")" class="avatar" />
+                                    <div class="info">
+                                        <span class="name">@member.Name</span>
+                                        <span class="id">ID: @member.Id</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="contact-info">
+                                    <div><i class="fa-regular fa-envelope"></i> @member.Email</div>
+                                    <div><i class="fa-solid fa-phone"></i> @member.MobileNumber</div>
+                                </div>
+                            </td>
+                            <td><span class="role-tag">@member.Role</span></td>
+                            <td class="actions-cell">
+                                <button class="action-btn edit"><i class="fa-solid fa-pen"></i></button>
+                                <button class="action-btn delete"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+@if (ShowMemberModal)
+{
+    <div class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Add New Member</h3>
+                <button class="close-btn" @onclick="CloseMemberModal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" class="form-control" placeholder="Enter full name" @bind="newMember.Name" />
+                </div>
+
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Age</label>
+                        <input type="number" class="form-control" placeholder="Age" @bind="newMember.Age" />
+                    </div>
+
+                    <div class="input-group">
+                        <label>National ID</label>
+                        <input type="text" class="form-control" placeholder="14 Digits ID" @bind="newMember.NationalId" data-dismiss="" />
+                    </div>
+
+                    <div class="input-group">
+                        <select class="form-select" @bind="newMember.Role">
+                            <option value="">All Roles</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Member">Member</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="CloseMemberModal">Cancel</button>
+                <button class="btn btn-primary" @onclick="AddNewMember">Save Member</button>
+            </div>
+        </div>
+    </div>
+}
+
+
+<style>
+    /* المتغيرات */
+    :root {
+        --primary: #007bff;
+        --sidebar-bg: #ffffff;
+        --main-bg: #f4f7fa;
+        --text-dark: #333;
+        --text-light: #888;
+        --border-color: #eee;
+        --radius: 12px;
+    }
+
+    * {
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+        margin: 0;
+        background-color: var(--main-bg);
+        color: var(--text-dark);
+    }
+
+    /* Layout Structure */
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: 250px 1fr; /* تقسيم الصفحة: القائمة والمحتوى */
+        min-height: 100vh;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+        background: var(--sidebar-bg);
+        padding: 20px;
+        border-right: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+    }
+
+
+
+    .sidebar-header h3 {
+        margin: 0;
+        color: var(--primary);
+        font-size: 1.2rem;
+    }
+
+    .search-box-sidebar {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-light);
+    }
+
+        .search-box-sidebar input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+        }
+
+    .nav-label {
+        font-size: 0.8rem;
+        color: #aaa;
+        margin-bottom: 5px;
+        margin-top: 15px;
+        font-weight: 600;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 15px;
+        text-decoration: none;
+        color: #555;
+        border-radius: 8px;
+        transition: 0.2s;
+        margin-bottom: 5px;
+        cursor: pointer;
+    }
+
+        .nav-item:hover {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+    /* Main Content Styles */
+    .main-content {
+        padding: 25px 35px;
+        overflow-y: auto;
+    }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    .breadcrumbs h2 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .breadcrumbs span {
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    /* Elements */
+    .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: none;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .filter-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: var(--radius);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .search-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f8f9fa;
+        padding: 8px 15px;
+        border-radius: 8px;
+        width: 300px;
+        border: 1px solid #eee;
+    }
+
+        .search-wrapper input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+        }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .form-select {
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        background: white;
+    }
+
+    /* Table */
+    .card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .styled-table thead {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .styled-table th {
+            text-align: left;
+            padding: 15px 20px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .styled-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f9f9f9;
+            vertical-align: middle;
+        }
+
+    /* Specific Cell Styles */
+    .member-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+    }
+
+    .info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .name {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .id {
+        font-size: 0.75rem;
+        color: #888;
+    }
+
+    .contact-info {
+        font-size: 0.85rem;
+        color: #666;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .role-tag {
+        background: #eef2ff;
+        color: var(--primary);
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+        .status-badge.green {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.red {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-badge.grey {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        margin: 0 2px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .action-btn.edit {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .action-btn.delete {
+            background: #fff0f0;
+            color: #dc3545;
+        }
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-box {
+        background: white;
+        width: 450px;
+        border-radius: 12px;
+        overflow: hidden;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .modal-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        background: #f8f9fa;
+    }
+
+        .modal-header h3 {
+            margin: 0;
+        }
+
+    .close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #888;
+    }
+
+    .modal-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .input-group label {
+        display: block;
+        margin-bottom: -10px;
+        margin-right: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        outline: none;
+    }
+
+    .row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    @@keyframes slideDown {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+@code {
+    private List<Member>? MembersList;
+    private Member newMember = new Member();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMembers();
+    }
+
+    private async Task LoadMembers()
+    {
+        MembersList = await MemberService.GetMembersAsync();
+    }
+
+    private async Task AddNewMember()
+    {
+        await MemberService.AddMemberAsync(newMember);
+        newMember = new Member(); // Reset form
+        await LoadMembers(); // Refresh list
+    }
+}
+@code {
+    private bool ShowMemberModal = false;
+
+    private void OpenMemberModal()
+    {
+        ShowMemberModal = true;
+    }
+
+    private void CloseMemberModal()
+    {
+        ShowMemberModal = false;
+    }
+}
