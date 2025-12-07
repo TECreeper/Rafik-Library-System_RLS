@@ -1,4 +1,5 @@
 ﻿@page "/members"
+@inject IJSRuntime JSRuntime
 @using Library_website.Components.Layout
 @layout EmptyLayout
 @using MyLibraryApp.Models
@@ -42,7 +43,7 @@
                 <span>Home > Members</span>
             </div>
             <div class="user-actions">
-                <button @onclick="OpenMemberModal" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add New Member</button>
+                <button type="button" @onclick="OpenMemberModal" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add New Member</button>
             </div>
         </header>
 
@@ -76,30 +77,33 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var member in MembersList)
+                    @if (MembersList != null)
                     {
-                        <tr>
-                            <td>
-                                <div class="member-profile">
-                                    <img src="@($"https://ui-avatars.com/api/?name={member.Name}&background=random&color=fff")" class="avatar" />
-                                    <div class="info">
-                                        <span class="name">@member.Name</span>
-                                        <span class="id">ID: @member.Id</span>
+                        @foreach (var member in MembersList)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="member-profile">
+                                        <img src="@($"https://ui-avatars.com/api/?name={member.Name}&background=random&color=fff")" class="avatar" />
+                                        <div class="info">
+                                            <span class="name">@member.Name</span>
+                                            <span class="id">ID: @member.Id</span>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="contact-info">
-                                    <div><i class="fa-regular fa-envelope"></i> @member.Email</div>
-                                    <div><i class="fa-solid fa-phone"></i> @member.MobileNumber</div>
-                                </div>
-                            </td>
-                            <td><span class="role-tag">@member.Role</span></td>
-                            <td class="actions-cell">
-                                <button class="action-btn edit"><i class="fa-solid fa-pen"></i></button>
-                                <button class="action-btn delete"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
+                                </td>
+                                <td>
+                                    <div class="contact-info">
+                                        <div><i class="fa-regular fa-envelope"></i> @member.Email</div>
+                                        <div><i class="fa-solid fa-phone"></i> @member.MobileNumber</div>
+                                    </div>
+                                </td>
+                                <td><span class="role-tag">@member.Role</span></td>
+                                <td class="actions-cell">
+                                    <button type="button" class="action-btn edit"><i class="fa-solid fa-pen"></i></button>
+                                    <button type="button" class="action-btn delete"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        }
                     }
                 </tbody>
             </table>
@@ -112,7 +116,7 @@
         <div class="modal-box">
             <div class="modal-header">
                 <h3>Add New Member</h3>
-                <button class="close-btn" @onclick="CloseMemberModal">
+                <button type="button" class="close-btn" @onclick="CloseMemberModal">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -120,40 +124,50 @@
             <div class="modal-body">
                 <div class="input-group">
                     <label>Full Name</label>
-                    <input type="text" class="form-control" placeholder="Enter full name" @bind="newMember.Name" />
+                    <input type="text" class="form-control" placeholder="Enter full name" @bind="form.Name" />
                 </div>
 
                 <div class="row-2">
                     <div class="input-group">
                         <label>Age</label>
-                        <input type="text" class="form-control" placeholder="Age" @bind="newMember.Age" />
+                        <input type="text" class="form-control" placeholder="Age" @bind="form.Age" />
                     </div>
 
                     <div class="input-group">
                         <label>National ID</label>
-                        <input type="text" class="form-control" placeholder="14 Digits ID" @bind="newMember.NationalId" data-dismiss="" />
+                        <input type="text" class="form-control" placeholder="14 Digits ID" @bind="form.NationalId" />
                     </div>
 
                     <div class="input-group">
-                        <select class="form-select" @bind="newMember.Role">
-                            <option >All Roles</option>
+                        <select class="form-select" @bind="form.Role">
+                            <option value="">All Roles</option>
                             <option value="Admin">Admin</option>
                             <option value="Member">Member</option>
                         </select>
                     </div>
                 </div>
+
+                <div class="input-group">
+                    <label>Mobile</label>
+                    <input type="text" class="form-control" placeholder="Mobile number" @bind="form.MobileNumber" />
+                </div>
+
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" class="form-control" placeholder="email@example.com" @bind="form.Email" />
+                </div>
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-outline" @onclick="CloseMemberModal">Cancel</button>
-                <button class="btn btn-primary" @onclick="AddNewMember">Add member</button>
+                <button type="button" class="btn btn-outline" @onclick="CloseMemberModal">Cancel</button>
+                <button type="button" class="btn btn-primary" @onclick="AddNewMember">Add member</button>
             </div>
         </div>
     </div>
 }
 
-
-<style>
+<style/>
+    <style >
     /* المتغيرات */
     :root {
         --primary: #007bff;
@@ -547,8 +561,20 @@
 </style>
 
 @code {
+    // UI form model — kept inside component to avoid changing your domain classes
+    private class MemberForm
+    {
+        public string Name { get; set; } = string.Empty;
+        public string NationalId { get; set; } = string.Empty; // keep as string in form, parse to int when saving
+        public string Age { get; set; } = string.Empty; // parse to int when saving
+        public string MobileNumber { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = "Member";
+    }
+
+    private bool ShowMemberModal = false;
     private List<Member>? MembersList;
-    private Member newMember = new Member();
+    private MemberForm form = new MemberForm();
 
     protected override async Task OnInitializedAsync()
     {
@@ -558,25 +584,66 @@
     private async Task LoadMembers()
     {
         MembersList = await MemberService.GetMembersAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OpenMemberModal()
+    {
+        form = new MemberForm(); // reset form state
+        ShowMemberModal = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CloseMemberModal()
+    {
+        ShowMemberModal = false;
+        form = new MemberForm();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task AddNewMember()
     {
-        await MemberService.AddMemberAsync(newMember);
-        newMember = new Member(); // Reset form
-        await LoadMembers(); // Refresh list
-    }
-}
-@code {
-    private bool ShowMemberModal = false;
+        // basic validation and parsing — do not change domain model classes
+        if (string.IsNullOrWhiteSpace(form.Name))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Please enter the member's name.");
+            return;
+        }
 
-    private void OpenMemberModal()
-    {
-        ShowMemberModal = true;
-    }
+        if (!int.TryParse(form.NationalId, out var parsedNationalId))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "National ID must be a number.");
+            return;
+        }
 
-    private void CloseMemberModal()
-    {
-        ShowMemberModal = false;
+        if (!int.TryParse(form.Age, out var parsedAge))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Age must be a number.");
+            return;
+        }
+
+        var memberToSave = new Member
+        {
+            Name = form.Name.Trim(),
+            NationalId = parsedNationalId,
+            Age = parsedAge,
+            MobileNumber = form.MobileNumber?.Trim() ?? string.Empty,
+            Email = form.Email?.Trim() ?? string.Empty,
+            Role = string.IsNullOrWhiteSpace(form.Role) ? "Member" : form.Role
+        };
+
+        try
+        {
+            await MemberService.AddMemberAsync(memberToSave);
+
+            // refresh list and close modal so the new member appears immediately
+            await LoadMembers();
+            await CloseMemberModal();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", "AddNewMember failed:", ex.Message);
+            await JSRuntime.InvokeVoidAsync("alert", $"Failed to add member: {ex.Message}");
+        }
     }
 }
