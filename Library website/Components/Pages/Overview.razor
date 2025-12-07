@@ -81,8 +81,6 @@
                     <button class="btn btn-outline" @onclick="OpenModal">
                         <i class="fa-solid fa-plus"></i> Add Book
                     </button>
-
-                    <button class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send Reminders</button>
                 </div>
             </div>
 
@@ -94,14 +92,16 @@
             <div class="charts-row">
                 <div class="card chart-card">
                     <div class="card-header">
-                        <h3>Borrowed vs. Returned</h3>
-                        <div class="legend">
+                        <h3>Borrowed vs. Available</h3> <div class="legend">
                             <span class="dot blue"></span> Borrowed
-                            <span class="dot green"></span> Returned
+                            <span class="dot orange"></span> Available
                         </div>
                     </div>
                     <div class="chart-placeholder line-chart-mockup">
-                        <div class="line-mock"></div>
+                        <div class="line-mock blue-line"></div>
+
+                        <div class="line-mock orange-line"></div>
+
                         <div class="months">
                             <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
                         </div>
@@ -197,9 +197,22 @@
 }
 
 @code {
+    // Combined State
     private List<Book> Books = new List<Book>();
     private Book newBook = new Book();
     private bool ShowModal = false;
+    private int totalBookCount = 0;
+    private int totalMemberCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Fetch dashboard statistics
+        totalBookCount = await BookService.GetTotalBooksAsync();
+        totalMemberCount = await MemberService.GetTotalMembersAsync();
+
+        // Optionally fetch recently added books here if needed
+        // Books = await BookService.GetRecentBooksAsync();
+    }
 
     private void OpenModal()
     {
@@ -212,7 +225,7 @@
         ShowModal = false;
     }
 
-    private void SaveBook()
+    private async Task SaveBook()
     {
         // minimal validation: require at least a title or author
         if (string.IsNullOrWhiteSpace(newBook.Title) && string.IsNullOrWhiteSpace(newBook.Author))
@@ -221,8 +234,14 @@
             return;
         }
 
-        // add to top of recently added list
+        // Logic to save book to DB usually goes here
+        // await BookService.AddBookAsync(newBook);
+
+        // Add to local list for UI update (add to top)
         Books.Insert(0, newBook);
+
+        // Update total count locally to reflect addition immediately
+        totalBookCount++;
 
         // reset and close modal
         newBook = new Book();
@@ -230,8 +249,8 @@
     }
 }
 
-
 <style>
+    /* ... (The CSS styles remain exactly the same as provided) ... */
     :root {
         --primary: #007bff;
         --sidebar-bg: #ffffff;
@@ -542,15 +561,51 @@
         border-left: 1px solid #eee;
     }
 
+    /* تنسيق النقاط في الـ Legend */
+    .dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+        margin-left: 10px;
+    }
+
+        .dot.blue {
+            background-color: #007bff;
+        }
+
+        .dot.green {
+            background-color: #28a745;
+        }
+
+        .dot.orange {
+            background-color: #fd7e14;
+        }
+    /* الكلاس البرتقالي الجديد */
+
+    /* التنسيق الأساسي للخطوط */
     .line-mock {
         position: absolute;
-        top: 40%;
         left: 10%;
         right: 10%;
-        height: 2px;
-        background: #ddd;
-        background: linear-gradient(90deg, rgba(0,123,255,0) 0%, rgba(0,123,255,1) 100%);
-        transform: rotate(-5deg);
+        height: 3px; /* جعلنا الخط أسمك قليلاً */
+        border-radius: 2px;
+        transform: rotate(-5deg); /* ميلان بسيط للمحاكاة */
+    }
+
+    /* خصائص الخط الأزرق (Borrowed) */
+    .blue-line {
+        top: 45%; /* موقعه من الأعلى */
+        background: #007bff;
+        box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2); /* ظل خفيف */
+    }
+
+    /* خصائص الخط البرتقالي (Available) */
+    .orange-line {
+        top: 60%; /* موقعه أسفل الأزرق ليكون موازياً له */
+        background: #fd7e14;
+        box-shadow: 0 4px 10px rgba(253, 126, 20, 0.2);
     }
 
     .bar {
@@ -698,17 +753,4 @@
             opacity: 1;
         }
     }
-
 </style>
-
-@code {
-    private int totalBookCount = 0;
-    private int totalMemberCount = 0;
-
-    protected override async Task OnInitializedAsync()
-    {
-        totalBookCount = await BookService.GetTotalBooksAsync();
-
-        totalMemberCount = await MemberService.GetTotalMembersAsync();
-    }
-}
