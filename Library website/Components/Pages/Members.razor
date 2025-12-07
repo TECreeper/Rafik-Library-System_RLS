@@ -126,7 +126,7 @@
                 <div class="row-2">
                     <div class="input-group">
                         <label>Age</label>
-                        <input type="number" class="form-control" placeholder="Age" @bind="newMember.Age" />
+                        <input type="text" class="form-control" placeholder="Age" @bind="newMember.Age" />
                     </div>
 
                     <div class="input-group">
@@ -136,7 +136,7 @@
 
                     <div class="input-group">
                         <select class="form-select" @bind="newMember.Role">
-                            <option value="">All Roles</option>
+                            <option >All Roles</option>
                             <option value="Admin">Admin</option>
                             <option value="Member">Member</option>
                         </select>
@@ -146,7 +146,7 @@
 
             <div class="modal-footer">
                 <button class="btn btn-outline" @onclick="CloseMemberModal">Cancel</button>
-                <button class="btn btn-primary" @onclick="AddNewMember">Save Member</button>
+                <button class="btn btn-primary" @onclick="AddNewMember">Add member</button>
             </div>
         </div>
     </div>
