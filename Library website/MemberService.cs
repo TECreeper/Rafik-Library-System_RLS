@@ -24,5 +24,21 @@ namespace MyLibraryApp.Data
             _context.Members.Add(member);
             await _context.SaveChangesAsync();
         }
+        public async Task<int> GetTotalMembersAsync()
+        {
+            return await _context.Members.CountAsync();
+        }
+        public async Task DeleteMemberAsync(int id)
+        {
+            // 1. Find the book by its unique ID
+            var member = await _context.Members.FindAsync(id);
+
+            // 2. If found, remove it and save
+            if (member != null)
+            {
+                _context.Members.Remove(member);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

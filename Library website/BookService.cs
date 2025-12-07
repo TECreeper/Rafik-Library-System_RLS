@@ -39,7 +39,10 @@ private readonly LibraryDbContext _context;
                 await _context.SaveChangesAsync();
             }
         }
-
+        public async Task<int> GetTotalBooksAsync()
+        {
+            return await _context.Books.CountAsync();
+        }
     } 
 }
 

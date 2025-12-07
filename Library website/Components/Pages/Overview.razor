@@ -4,6 +4,8 @@
 @using MyLibraryApp.Models
 @using MyLibraryApp.Data
 @inject BookService BookService
+@inject MemberService MemberService
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
 <div class="dashboard-container">
@@ -57,7 +59,7 @@
             <div class="stats-row">
                 <div class="stat-card">
                     <div class="stat-header">Total Books <i class="fa-solid fa-book"></i></div>
-                    <div class="stat-value">0</div>
+                    <div class="stat-value">@totalBookCount</div>
                     <div class="stat-sub">Cataloged items</div>
                 </div>
                 <div class="stat-card">
@@ -72,7 +74,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">Total Members <i class="fa-solid fa-users"></i></div>
-                    <div class="stat-value">9,842</div>
+                    <div class="stat-value">@totalMemberCount</div>
                     <div class="stat-sub">All registered</div>
                 </div>
                 <div class="action-buttons">
@@ -698,3 +700,15 @@
     }
 
 </style>
+
+@code {
+    private int totalBookCount = 0;
+    private int totalMemberCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        totalBookCount = await BookService.GetTotalBooksAsync();
+
+        totalMemberCount = await MemberService.GetTotalMembersAsync();
+    }
+}

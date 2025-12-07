@@ -639,6 +639,17 @@
 
     private async Task AddNewBook()
     {
+        if (string.IsNullOrWhiteSpace(newBook.Title))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Please enter the books's name.");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(newBook.Author))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Please enter the authors's name.");
+            return;
+        }
+
         await BookService.AddBookAsync(newBook);
         newBook = new Book(); // Reset form
         await LoadBooks(); // Refresh list
