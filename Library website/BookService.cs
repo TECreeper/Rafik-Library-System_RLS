@@ -64,6 +64,64 @@ private readonly LibraryDbContext _context;
                                  .Where(b => b.IsBorrowed == false) // Filter!
                                  .ToListAsync();
         }
+
+        public async Task ReturnBookAsync(int bookId)
+        {
+            var book = await _context.Books.FindAsync(bookId);
+
+            if (book != null)
+            {
+                book.IsBorrowed = false;
+                book.CurrentMemberId = null; // Remove the link to the member
+                await _context.SaveChangesAsync();
+            }
+        }
+        public async Task<string> CheckoutBookAsync(string bookInput, string memberInput, DateTime dueDate)
+        {
+            // A. Find the Book (Try ID first, then Title/ISBN)
+            var book = await _context.Books
+                .FirstOrDefaultAsync(b => b.Id.ToString() == bookInput || b.Title == bookInput );
+
+            if (book == null) return "Book not found.";
+            if (book.IsBorrowed) return "Book is already borrowed.";
+
+            // B. Find the Member (Try ID first, then Name)
+            var member = await _context.Members
+                .FirstOrDefaultAsync(m => m.Id.ToString() == memberInput || m.Name == memberInput);
+
+            if (member == null) return "Member not found.";
+
+            // C. Process Transaction
+            book.IsBorrowed = true;
+            book.CurrentMemberId = member.Id;
+
+            // >>> LOGGING DATES <<<
+            book.BorrowDate = DateTime.Now; // Log today as borrow date
+            book.DueDate = dueDate;         // Log the selected due date
+            book.ReturnDate = null;         // Reset return date
+
+            await _context.SaveChangesAsync();
+            return "Success";
+        }
+
+        // 2. Return Book with Date Logging
+        public async Task<string> ReturnBookAsync(string bookInput)
+        {
+            var book = await _context.Books
+                .FirstOrDefaultAsync(b => b.Id.ToString() == bookInput || b.Title == bookInput );
+
+            if (book == null) return "Book not found.";
+            if (!book.IsBorrowed) return "Book is not currently borrowed.";
+
+            // >>> LOGGING DATES <<<
+            book.ReturnDate = DateTime.Now; // Log the actual return time
+
+            book.IsBorrowed = false;
+            book.CurrentMemberId = null;
+
+            await _context.SaveChangesAsync();
+            return "Success";
+        }
         public async Task<int> GetTotalBooksAsync()
         {
             return await _context.Books.CountAsync();

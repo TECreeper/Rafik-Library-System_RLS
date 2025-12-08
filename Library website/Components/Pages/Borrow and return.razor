@@ -1,10 +1,12 @@
 ﻿@page "/borrow"
+@using Library_website.Components.Layout
 @using MyLibraryApp.Models
 @using MyLibraryApp.Data
 @inject BookService BookService
 @inject MemberService MemberService
-@inject NavigationManager NavigationManager
 @rendermode InteractiveServer
+@layout EmptyLayout
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
 <div class="dashboard-container">
@@ -13,12 +15,10 @@
         <div class="sidebar-header">
             <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
         </div>
-
         <div class="search-box-sidebar">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" placeholder="Search catalog..." />
         </div>
-
         <nav class="sidebar-nav">
             <p class="nav-label">Navigation</p>
             <a href="/" class="nav-item"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
@@ -61,6 +61,14 @@
             </div>
 
             <div class="tab-content">
+
+                @if (!string.IsNullOrEmpty(Message))
+                {
+                    <div style="padding: 10px; margin-bottom: 15px; border-radius: 8px; background-color: @(IsError ? "#f8d7da" : "#d4edda"); color: @(IsError ? "#721c24" : "#155724");">
+                        @Message
+                    </div>
+                }
+
                 @if (ActiveTab == "Issue")
                 {
                     <div class="form-grid">
@@ -68,22 +76,22 @@
                             <label>Member ID / Name</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-user"></i>
-                                <input type="text" placeholder="Search member..." />
+                                <input type="text" placeholder="Search member ID or Name..." @bind="issueMemberInput" />
                             </div>
                         </div>
                         <div class="input-group">
-                            <label>Book ISBN / Title</label>
+                            <label>Book ISBN / Title / ID</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-book"></i>
-                                <input type="text" placeholder="Scan or type book..." />
+                                <input type="text" placeholder="Scan or type book..." @bind="issueBookInput" />
                             </div>
                         </div>
                         <div class="input-group">
                             <label>Due Date</label>
-                            <input type="date" class="date-input" value="@DateTime.Now.AddDays(14).ToString("yyyy-MM-dd")" />
+                            <input type="date" class="date-input" @bind="issueDueDate" />
                         </div>
                         <div class="form-actions">
-                            <button class="btn btn-primary big-btn">Confirm Issue <i class="fa-solid fa-check"></i></button>
+                            <button class="btn btn-primary big-btn" @onclick="ExecuteIssue">Confirm Issue <i class="fa-solid fa-check"></i></button>
                         </div>
                     </div>
                 }
@@ -91,23 +99,23 @@
                 {
                     <div class="form-grid return-mode">
                         <div class="input-group full-width">
-                            <label>Book ISBN to Return</label>
+                            <label>Book ISBN / ID to Return</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-barcode"></i>
-                                <input type="text" placeholder="Scan book ISBN..." />
+                                <input type="text" placeholder="Scan book ISBN or ID..." @bind="returnBookInput" />
                             </div>
                         </div>
                         <div class="fine-box">
                             <span><i class="fa-solid fa-circle-info"></i> No fines pending for this item.</span>
                         </div>
                         <div class="form-actions">
-                            <button class="btn btn-success big-btn">Confirm Return <i class="fa-solid fa-check"></i></button>
+                            <button class="btn btn-success big-btn" @onclick="ExecuteReturn">Confirm Return <i class="fa-solid fa-check"></i></button>
                         </div>
                     </div>
                 }
             </div>
         </div>
-        
+
         <h3 class="section-title">Recent Transactions</h3>
 
         <div class="card table-card">
@@ -116,7 +124,7 @@
                     <tr>
                         <th>Trans ID</th>
                         <th>Book Title</th>
-                        <th>Member</th>
+                        <th>Member ID</th>
                         <th>Issued Date</th>
                         <th>Due Date</th>
                         <th>Status</th>
@@ -128,35 +136,33 @@
                     {
                         <tr>
                             <td class="trans-id">#@item.Id</td>
-                            <td><span class="book-title">@item.BookTitle</span></td>
+                            <td><span class="book-title">@item.Title</span></td>
                             <td>
                                 <div class="member-mini">
-                                    <img src="@($"https://ui-avatars.com/api/?name={item.MemberName}&background=random&color=fff&size=24")" class="avatar-mini" />
-                                    @item.MemberName
+                                    <div style="width:24px;height:24px;border-radius:50%;background:#ddd;text-align:center;line-height:24px;margin-right:8px;">
+                                        @item.CurrentMemberId
+                                    </div>
+                                    Member #@item.CurrentMemberId
                                 </div>
                             </td>
-                            <td class="date">@item.IssueDate.ToString("MMM dd")</td>
-                            <td class="date @(item.Status == "Overdue" ? "text-red" : "")">@item.DueDate.ToString("MMM dd")</td>
+                            <td class="date">@(item.BorrowDate?.ToString("MMM dd") ?? "-")</td>
+                            <td class="date">@(item.DueDate?.ToString("MMM dd") ?? "-")</td>
                             <td>
-                                @if (item.Status == "Active")
+                                @if (item.IsBorrowed)
                                 {
                                     <span class="status-badge blue">Borrowed</span>
                                 }
-                                else if (item.Status == "Returned")
-                                {
-
-                                    <span class="status-badge green">Returned</span>
-                                }
                                 else
                                 {
-
-                                    <span class="status-badge red">Overdue</span>
+                                    <span class="status-badge green">Returned</span>
                                 }
                             </td>
                             <td>
-                                @if (item.Status != "Returned")
+                                @if (item.IsBorrowed)
                                 {
-                                    <button class="icon-btn" title="Quick Return"><i class="fa-solid fa-rotate-left"></i></button>
+                                    <button class="icon-btn" title="Quick Return" @onclick="() => QuickReturn(item.Id)">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
                                 }
                             </td>
                         </tr>
@@ -169,19 +175,103 @@
 </div>
 
 @code {
-
+    // --- State Variables ---
     public string ActiveTab = "Issue";
+    public string Message = "";
+    public bool IsError = false;
+
+    // --- Inputs ---
+    private string issueMemberInput = "";
+    private string issueBookInput = "";
+    private DateTime issueDueDate = DateTime.Now.AddDays(14); // Default 2 weeks
+    private string returnBookInput = "";
+
+    // --- Data List ---
+    private List<Book> Transactions = new List<Book>();
+
+    // --- Lifecycle ---
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTransactions();
+    }
+
+    private async Task LoadTransactions()
+    {
+        // Load books that are currently borrowed (or were recently)
+        var allBooks = await BookService.GetBooksAsync();
+        Transactions = allBooks.Where(b => b.IsBorrowed).OrderByDescending(b => b.BorrowDate).ToList();
+    }
+
+    // --- Actions ---
 
     private void SetTab(string tabName)
     {
         ActiveTab = tabName;
-        StateHasChanged();
+        Message = ""; // Clear messages on tab switch
     }
 
+    private async Task ExecuteIssue()
+    {
+        if (string.IsNullOrWhiteSpace(issueBookInput) || string.IsNullOrWhiteSpace(issueMemberInput))
+        {
+            ShowMessage("Please fill in both Member and Book fields.", true);
+            return;
+        }
+
+        // Call the updated Service method
+        string result = await BookService.CheckoutBookAsync(issueBookInput, issueMemberInput, issueDueDate);
+
+        if (result == "Success")
+        {
+            ShowMessage("Book issued successfully!", false);
+            issueBookInput = "";
+            issueMemberInput = "";
+            await LoadTransactions();
+        }
+        else
+        {
+            ShowMessage(result, true);
+        }
+    }
+
+    private async Task ExecuteReturn()
+    {
+        if (string.IsNullOrWhiteSpace(returnBookInput))
+        {
+            ShowMessage("Please enter a Book ID or Title.", true);
+            return;
+        }
+
+        string result = await BookService.ReturnBookAsync(returnBookInput);
+
+        if (result == "Success")
+        {
+            ShowMessage("Book returned successfully!", false);
+            returnBookInput = "";
+            await LoadTransactions();
+        }
+        else
+        {
+            ShowMessage(result, true);
+        }
+    }
+
+    private async Task QuickReturn(int bookId)
+    {
+        await BookService.ReturnBookAsync(bookId.ToString());
+        ShowMessage("Book returned via Quick Action.", false);
+        await LoadTransactions();
+    }
+
+    private void ShowMessage(string msg, bool isError)
+    {
+        Message = msg;
+        IsError = isError;
+    }
 }
 
 <style>
-    /* المتغيرات الأساسية */
+    /* ... (Your existing CSS code here - I have not touched it) ... */
     :root {
         --primary: #007bff;
         --success: #28a745;
@@ -204,14 +294,12 @@
         color: var(--text-dark);
     }
 
-    /* Layout Structure */
     .dashboard-container {
         display: grid;
-        grid-template-columns: 250px 1fr; /* تقسيم الصفحة: القائمة والمحتوى */
+        grid-template-columns: 250px 1fr;
         min-height: 100vh;
     }
 
-    /* Sidebar Styles */
     .sidebar {
         background: var(--sidebar-bg);
         padding: 20px;
@@ -223,8 +311,6 @@
         position: sticky;
         top: 0;
     }
-
-
 
     .sidebar-header h3 {
         margin: 0;
@@ -280,7 +366,6 @@
             color: white;
         }
 
-    /* Main Content */
     .main-content {
         padding: 25px 35px;
         overflow-y: auto;
@@ -318,7 +403,6 @@
         right: 8px;
     }
 
-    /* Action Card & Tabs */
     .action-card {
         background: white;
         border-radius: var(--radius);
@@ -364,7 +448,6 @@
         padding: 30px;
     }
 
-    /* Forms */
     .form-grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr auto;
@@ -420,7 +503,6 @@
         font-family: inherit;
     }
 
-    /* Buttons */
     .big-btn {
         padding: 12px 25px;
         border-radius: 8px;
@@ -447,7 +529,6 @@
         grid-column: span 1;
     }
 
-    /* Fines Area */
     .fine-box {
         background: #e3f2fd;
         color: #0d47a1;
@@ -459,7 +540,6 @@
         height: 45px;
     }
 
-    /* Table */
     .table-card {
         background: white;
         border-radius: var(--radius);
@@ -525,7 +605,6 @@
         font-weight: bold;
     }
 
-    /* Status Badges */
     .status-badge {
         padding: 5px 12px;
         border-radius: 15px;
@@ -560,46 +639,4 @@
             color: var(--primary);
             transform: scale(1.1);
         }
-
 </style>
-
-@code {
-    // Data Containers
-    private List<Book> availableBooks = new List<Book>();
-    private Member? foundMember; // Stores the member if we find one
-
-    // Inputs
-    private int selectedBookId = 0;
-    private int searchMemberId;
-    private bool hasSearched = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        availableBooks = await BookService.GetAvailableBooksAsync();
-    }
-
-    // Logic to find the member
-    private async Task SearchForMember()
-    {
-        hasSearched = true;
-        // Call the service to find the human
-        foundMember = await MemberService.GetMemberByIdAsync(searchMemberId);
-    }
-
-    // Final Logic to save everything
-    private async Task ConfirmBorrow()
-    {
-        if (selectedBookId != 0 && foundMember != null)
-        {
-            // Pass BOTH the book ID and the member ID
-            await BookService.CheckoutBookAsync(selectedBookId, foundMember.Id);
-
-            // Reset the page
-            selectedBookId = 0;
-            foundMember = null;
-            searchMemberId = 0;
-            hasSearched = false;
-            availableBooks = await BookService.GetAvailableBooksAsync();
-        }
-    }
-}

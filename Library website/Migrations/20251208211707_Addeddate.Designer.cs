@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyLibraryApp.Data;
 
@@ -10,9 +11,11 @@ using MyLibraryApp.Data;
 namespace Librarywebsite.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
-    partial class LibraryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251208211707_Addeddate")]
+    partial class Addeddate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.10");
@@ -27,7 +30,7 @@ namespace Librarywebsite.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("BorrowDate")
+                    b.Property<DateOnly>("BorrowDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Categyry")
@@ -37,16 +40,13 @@ namespace Librarywebsite.Migrations
                     b.Property<int?>("CurrentMemberId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("TEXT");
-
                     b.Property<bool>("IsBorrowed")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Price")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime?>("ReturnDate")
+                    b.Property<DateOnly>("ReturnDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")

@@ -7,7 +7,9 @@
         public string Author { get; set; } = string.Empty;
         public int Price { get; set; }
         public bool IsBorrowed { get; set; }
-        public DateOnly BorrowDate { get; set; }
+        public DateTime? BorrowDate { get; set; } // When it was issued
+        public DateTime? DueDate { get; set; }    // When it should be back
+        public DateTime? ReturnDate { get; set; } // Log when it was actually returned
         public string Categyry { get; set; } = string.Empty;
         public int? CurrentMemberId { get; set; }
     }
