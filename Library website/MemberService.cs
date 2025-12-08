@@ -40,5 +40,12 @@ namespace MyLibraryApp.Data
                 await _context.SaveChangesAsync();
             }
         }
+        // In MemberService.cs
+        public async Task<Member?> GetMemberByIdAsync(int id)
+        {
+            // FindAsync looks for the Primary Key (Internal ID)
+            return await _context.Members.FindAsync(id);
+
+        }
     }
 }

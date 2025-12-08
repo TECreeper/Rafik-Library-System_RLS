@@ -39,6 +39,31 @@ private readonly LibraryDbContext _context;
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<int> GetCountBorrowingAsync(bool Borrowing)
+        {
+            // "b" represents one book. 
+            // We are asking: Count every book WHERE the Category equals the one we passed in.
+            return await _context.Books
+                                 .CountAsync(b => b.IsBorrowed ==Borrowing);
+        }
+        public async Task CheckoutBookAsync(int bookId, int memberId)
+        {
+            var book = await _context.Books.FindAsync(bookId);
+
+            if (book != null)
+            {
+                book.IsBorrowed = true;
+                book.CurrentMemberId = memberId; // Link the member!
+                await _context.SaveChangesAsync();
+            }
+        }
+        public async Task<List<Book>> GetAvailableBooksAsync()
+        {
+            return await _context.Books
+                                 .Where(b => b.IsBorrowed == false) // Filter!
+                                 .ToListAsync();
+        }
         public async Task<int> GetTotalBooksAsync()
         {
             return await _context.Books.CountAsync();

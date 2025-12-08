@@ -1,8 +1,10 @@
 ﻿@page "/borrow"
+@using MyLibraryApp.Models
+@using MyLibraryApp.Data
+@inject BookService BookService
+@inject MemberService MemberService
+@inject NavigationManager NavigationManager
 @rendermode InteractiveServer
-@using Library_website.Components.Layout
-@layout EmptyLayout
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
 <div class="dashboard-container">
@@ -167,8 +169,7 @@
 </div>
 
 @code {
-    // للتحكم في التبويبات (Issue / Return)
-    // 1. متغير لتخزين التبويب الحالي
+
     public string ActiveTab = "Issue";
 
     private void SetTab(string tabName)
@@ -177,23 +178,6 @@
         StateHasChanged();
     }
 
-
-    // 3. كلاس تمثيل البيانات (عشان الجدول ما يضربش)
-    public class TransactionModel
-    {
-        public string Id { get; set; }
-        public string BookTitle { get; set; }
-        public string MemberName { get; set; }
-        public DateTime IssueDate { get; set; }
-        public DateTime DueDate { get; set; }
-        public string Status { get; set; } // Active, Returned, Overdue
-    }
-
-    // 4. بيانات وهمية للعرض
-    private List<TransactionModel> Transactions = new List<TransactionModel>
-    {
-
-    };
 }
 
 <style>
@@ -578,3 +562,44 @@
         }
 
 </style>
+
+@code {
+    // Data Containers
+    private List<Book> availableBooks = new List<Book>();
+    private Member? foundMember; // Stores the member if we find one
+
+    // Inputs
+    private int selectedBookId = 0;
+    private int searchMemberId;
+    private bool hasSearched = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        availableBooks = await BookService.GetAvailableBooksAsync();
+    }
+
+    // Logic to find the member
+    private async Task SearchForMember()
+    {
+        hasSearched = true;
+        // Call the service to find the human
+        foundMember = await MemberService.GetMemberByIdAsync(searchMemberId);
+    }
+
+    // Final Logic to save everything
+    private async Task ConfirmBorrow()
+    {
+        if (selectedBookId != 0 && foundMember != null)
+        {
+            // Pass BOTH the book ID and the member ID
+            await BookService.CheckoutBookAsync(selectedBookId, foundMember.Id);
+
+            // Reset the page
+            selectedBookId = 0;
+            foundMember = null;
+            searchMemberId = 0;
+            hasSearched = false;
+            availableBooks = await BookService.GetAvailableBooksAsync();
+        }
+    }
+}

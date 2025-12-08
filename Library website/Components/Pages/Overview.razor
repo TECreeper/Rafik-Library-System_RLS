@@ -64,7 +64,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">Borrowed Books <i class="fa-regular fa-bookmark"></i></div>
-                    <div class="stat-value">0</div>
+                    <div class="stat-value">@BorrowedCount</div>
                     <div class="stat-badge green">+4.2% vs last week</div>
                 </div>
                 <div class="stat-card">
@@ -197,6 +197,8 @@
 }
 
 @code {
+    private int BorrowedCount = 0;
+
     // Combined State
     private List<Book> Books = new List<Book>();
     private Book newBook = new Book();
@@ -206,6 +208,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+
+        BorrowedCount = await BookService.GetCountBorrowingAsync(true);
+
+ 
+
         // Fetch dashboard statistics
         totalBookCount = await BookService.GetTotalBooksAsync();
         totalMemberCount = await MemberService.GetTotalMembersAsync();

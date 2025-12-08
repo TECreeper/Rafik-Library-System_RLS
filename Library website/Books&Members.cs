@@ -7,8 +7,9 @@
         public string Author { get; set; } = string.Empty;
         public int Price { get; set; }
         public bool IsBorrowed { get; set; }
-
+        public DateOnly BorrowDate { get; set; }
         public string Categyry { get; set; } = string.Empty;
+        public int? CurrentMemberId { get; set; }
     }
 
     public class Member
