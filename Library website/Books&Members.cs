@@ -18,7 +18,7 @@
     {
         public int Id { get; set; }
 
-        // National IDs can be long and may include leading zeros — use string.
+        
         public int NationalId { get; set; }
 
         public string Name { get; set; } = string.Empty;
