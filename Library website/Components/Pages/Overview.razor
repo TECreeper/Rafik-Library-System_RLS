@@ -65,11 +65,10 @@
                 <div class="stat-card">
                     <div class="stat-header">Borrowed Books <i class="fa-regular fa-bookmark"></i></div>
                     <div class="stat-value">@BorrowedCount</div>
-                    <div class="stat-badge green">+4.2% vs last week</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">Overdue Books <i class="fa-regular fa-clock"></i></div>
-                    <div class="stat-value">0</div>
+                    <div class="stat-value">@OverdueList.Count</div>
                     <div class="stat-badge orange">Action needed</div>
                 </div>
                 <div class="stat-card">
@@ -86,7 +85,7 @@
 
             <div class="alert-banner">
                 <i class="fa-solid fa-triangle-exclamation"></i>
-                <span><strong>Overdue spike:</strong> 34 books overdue for 14+ days. Consider sending reminders.</span>
+                <span><strong>Overdue spike:</strong> @OverdueList.Count books overdue for 14+ days. Consider sending reminders.</span>
             </div>
 
             <div class="charts-row">
@@ -206,12 +205,23 @@
     private int totalBookCount = 0;
     private int totalMemberCount = 0;
 
+    public class OverdueModel
+    {
+     
+        public string BookTitle { get; set; } = "";
+
+    }
+    List<OverdueModel> OverdueList = new List<OverdueModel>();
+   
+
+
     protected override async Task OnInitializedAsync()
     {
 
         BorrowedCount = await BookService.GetCountBorrowingAsync(true);
 
- 
+        await CalculateOverdueData();
+
 
         // Fetch dashboard statistics
         totalBookCount = await BookService.GetTotalBooksAsync();
@@ -219,6 +229,29 @@
 
         // Optionally fetch recently added books here if needed
         // Books = await BookService.GetRecentBooksAsync();
+    }
+
+    private async Task CalculateOverdueData()
+    {
+        // 1. Get the raw books from DB
+        var rawOverdueBooks = await BookService.GetOverdueBooksAsync();
+
+        OverdueList.Clear();
+
+        // 2. Loop through each book to calculate fines
+        foreach (var book in rawOverdueBooks)
+        {
+            // A. Get Member Details
+            var member = await MemberService.GetMemberByIdAsync(book.CurrentMemberId ?? 0);
+
+            OverdueList.Add(new OverdueModel
+            {
+                BookTitle = book.Title,
+
+
+
+            });
+        }
     }
 
     private void OpenModal()
