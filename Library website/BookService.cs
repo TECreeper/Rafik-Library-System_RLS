@@ -133,6 +133,21 @@ private readonly LibraryDbContext _context;
                                  .Where(b => b.IsBorrowed && b.DueDate < DateTime.Now)
                                  .ToListAsync();
         }
+        public async Task UpdateBookAsync(Book book)
+        {
+            // 1. Check if the database is already holding onto a book with this ID
+            var existingTracked = _context.Books.Local.FirstOrDefault(b => b.Id == book.Id);
+
+            // 2. If found, tell the database to stop tracking it (Detach)
+            if (existingTracked != null)
+            {
+                _context.Entry(existingTracked).State = EntityState.Detached;
+            }
+
+            // 3. Now we can safely update the new copy
+            _context.Books.Update(book);
+            await _context.SaveChangesAsync();
+        }
         public async Task<int> GetTotalBooksAsync()
         {
             return await _context.Books.CountAsync();

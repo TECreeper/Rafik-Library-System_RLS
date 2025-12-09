@@ -7,17 +7,13 @@
 @rendermode InteractiveServer
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 @layout EmptyLayout
+
 <div class="dashboard-container">
     <aside class="sidebar">
         <div class="sidebar-header">
             <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
         </div>
-
-        <div class="search-box-sidebar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search catalog..." />
-        </div>
-
+        
         <nav class="sidebar-nav">
             <p class="nav-label">Navigation</p>
             <a href="/" class="nav-item"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
@@ -38,26 +34,26 @@
                 <span>Home > Books</span>
             </div>
             <div class="user-actions">
-                <button @onclick="OpenModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add New Book</button>
+                <button @onclick="OpenAddModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add New Book</button>
             </div>
-
         </header>
 
         <div class="filter-bar">
             <div class="search-wrapper">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search by title, author, ISBN..." />
+                <input type="text" placeholder="Search by title, author, ID..." @bind="SearchTerm" @bind:event="oninput" />
             </div>
             <div class="filter-actions">
-                <select class="form-select">
-                    <option>All Categories</option>
-                    <option>Fiction</option>
-                    <option>Science</option>
+                <select class="form-select" @bind="SelectedCategory">
+                    <option value="All Categories">All Categories</option>
+                    <option value="Fiction">Fiction</option>
+                    <option value="Science">Science</option>
+                    <option value="Sci-Fi">Sci-Fi</option>
                 </select>
-                <select class="form-select">
-                    <option>All Status</option>
-                    <option>Available</option>
-                    <option>Borrowed</option>
+                <select class="form-select" @bind="SelectedStatus">
+                    <option value="All Status">All Status</option>
+                    <option value="Available">Available</option>
+                    <option value="Borrowed">Borrowed</option>
                 </select>
             </div>
         </div>
@@ -69,47 +65,56 @@
                         <th>Title</th>
                         <th>Author</th>
                         <th>Category</th>
-                        <th>ISBN</th>
+                        <th>ID</th>
                         <th>Status</th>
                         <th style="text-align:center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var book in books)
+                    @if (PagedBooks.Any())
+                    {
+                        @foreach (var book in PagedBooks)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="book-info-cell">
+                                        <div class="book-icon"><i class="fa-solid fa-book-open"></i></div>
+                                        <span class="book-title">@book.Title</span>
+                                    </div>
+                                </td>
+                                <td>@book.Author</td>
+                                <td><span class="category-tag">@book.Categyry</span></td>
+                                <td class="isbn">@book.Id</td>
+                                <td>
+                                    @if (book.IsBorrowed && book.DueDate < DateTime.Now)
+                                    {
+                                        <span class="status-badge red">Overdue</span>
+                                    }
+                                    else if (book.IsBorrowed)
+                                    {
+                                        <span class="status-badge orange">Borrowed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-badge green">Available</span>
+                                    }
+                                </td>
+                                <td class="actions-cell">
+                                    <button class="action-btn edit" @onclick="() => OpenEditModal(book)">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button class="action-btn delete" @onclick="() => DeleteBook(book.Id)">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            <td>
-                                <div class="book-info-cell">
-                                    <div class="book-icon"><i class="fa-solid fa-book-open"></i></div>
-                                    <span class="book-title">@book.Title</span>
-                                </div>
-                            </td>
-                            <td>@book.Author</td>
-                            <td><span class="category-tag">@book.Categyry</span></td>
-                            <td class="Id">@book.Id</td>
-                            <td>
-                                @if (book.IsBorrowed && book.DueDate < DateTime.Now)
-                                {
-                                    <span class="status-badge red">Overdue</span>
-                                }
-                                else if (book.IsBorrowed)
-                                {
-                                    <span class="status-badge orange">Borrowed</span>
-
-
-                                }
-                                else
-                                {
-                                    <span class="status-badge green">Available</span>
-
-                                }
-                            </td>
-                            <td class="actions-cell">
-                                <button class="action-btn edit"><i class="fa-solid fa-pen"></i></button>
-
-                                <button class="action-btn delete" @onclick="() => DeleteBook(book.Id)">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
+                            <td colspan="6" style="text-align:center; padding: 20px; color: #888;">
+                                No books found matching your criteria.
                             </td>
                         </tr>
                     }
@@ -117,13 +122,20 @@
             </table>
 
             <div class="pagination">
-                <span>Showing 1-5 of 48,320</span>
+                <span>Showing @StartItemIndex - @EndItemIndex of @TotalFilteredItems</span>
                 <div class="page-buttons">
-                    <button disabled>&lt;</button>
-                    <button class="active">1</button>
-                    <button>2</button>
-                    <button>3</button>
-                    <button>&gt;</button>
+                    <button @onclick="PrevPage" disabled="@(CurrentPage == 1)">&lt;</button>
+
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        int pageNumber = i;
+                        <button class="@(CurrentPage == pageNumber ? "active" : "")"
+                                @onclick="() => ChangePage(pageNumber)">
+                            @pageNumber
+                        </button>
+                    }
+
+                    <button @onclick="NextPage" disabled="@(CurrentPage == TotalPages || TotalPages == 0)">&gt;</button>
                 </div>
             </div>
         </div>
@@ -135,14 +147,14 @@
     <div class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
-                <h3>Add New Book</h3>
+                <h3>@(newBook.Id == 0 ? "Add New Book" : "Edit Book")</h3>
                 <button class="close-btn" @onclick="CloseModal"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <div class="modal-body">
                 <div class="input-group">
                     <label>Title</label>
-                    <input @bind="newBook.Title " type="text" class="form-control" placeholder="Book Name" />
+                    <input @bind="newBook.Title" type="text" class="form-control" placeholder="Book Name" />
                 </div>
                 <div class="input-group">
                     <label>Author</label>
@@ -151,7 +163,7 @@
                 <div class="row-2">
                     <div class="input-group">
                         <label>Book ID</label>
-                        <input type="text" class="form-control" placeholder="Book_ID" />
+                        <input type="text" class="form-control" value="@(newBook.Id == 0 ? "Auto" : newBook.Id)" disabled />
                     </div>
                     <div class="input-group">
                         <label>Category</label>
@@ -161,24 +173,141 @@
                             <option value="Science">Science</option>
                             <option value="Sci-Fi">Sci-Fi</option>
                         </select>
-
                     </div>
                 </div>
             </div>
 
             <div class="modal-footer">
                 <button class="btn btn-outline" @onclick="CloseModal">Cancel</button>
-                <button class="btn btn-outline" @onclick="AddNewBook">Add Book</button>
+                <button class="btn btn-outline" @onclick="SaveBook">
+                    @(newBook.Id == 0 ? "Add Book" : "Update Book")
+                </button>
             </div>
         </div>
     </div>
 }
 
 @code {
+    private List<Book> allBooks = new List<Book>();
+    private Book newBook = new Book();
     private bool ShowModal = false;
 
-    private void OpenModal()
+    // -- Filter & Pagination State --
+    private string _searchTerm = "";
+    public string SearchTerm
     {
+        get => _searchTerm;
+        set { _searchTerm = value; CurrentPage = 1; }
+    }
+
+    private string _selectedCategory = "All Categories";
+    public string SelectedCategory
+    {
+        get => _selectedCategory;
+        set { _selectedCategory = value; CurrentPage = 1; }
+    }
+
+    private string _selectedStatus = "All Status";
+    public string SelectedStatus
+    {
+        get => _selectedStatus;
+        set { _selectedStatus = value; CurrentPage = 1; }
+    }
+
+    public int CurrentPage { get; set; } = 1;
+    private const int PageSize = 10;
+
+    // -- Computed Properties for UI --
+    private IEnumerable<Book> FilteredBooks
+    {
+        get
+        {
+            var query = allBooks.AsEnumerable();
+
+            // 1. Search Filter
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                query = query.Where(b =>
+                    (b.Title != null && b.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (b.Author != null && b.Author.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    b.Id.ToString().Contains(SearchTerm));
+            }
+
+            // 2. Category Filter
+            if (SelectedCategory != "All Categories")
+            {
+                query = query.Where(b => b.Categyry == SelectedCategory);
+            }
+
+            // 3. Status Filter
+            if (SelectedStatus != "All Status")
+            {
+                if (SelectedStatus == "Available")
+                    query = query.Where(b => !b.IsBorrowed);
+                else if (SelectedStatus == "Borrowed")
+                    query = query.Where(b => b.IsBorrowed);
+            }
+
+            // 4. Sort by ID (Ascending)
+            return query.OrderBy(b => b.Id);
+        }
+    }
+
+    private IEnumerable<Book> PagedBooks => FilteredBooks
+                                            .Skip((CurrentPage - 1) * PageSize)
+                                            .Take(PageSize);
+
+    private int TotalFilteredItems => FilteredBooks.Count();
+    private int TotalPages => (int)Math.Ceiling((double)TotalFilteredItems / PageSize);
+    private int StartItemIndex => TotalFilteredItems == 0 ? 0 : (CurrentPage - 1) * PageSize + 1;
+    private int EndItemIndex => Math.Min(CurrentPage * PageSize, TotalFilteredItems);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBooks();
+    }
+
+    private async Task LoadBooks()
+    {
+        var dbBooks = await BookService.GetBooksAsync();
+        if (dbBooks != null)
+        {
+            allBooks = dbBooks;
+        }
+    }
+
+    private void NextPage()
+    {
+        if (CurrentPage < TotalPages) CurrentPage++;
+    }
+
+    private void PrevPage()
+    {
+        if (CurrentPage > 1) CurrentPage--;
+    }
+
+    private void ChangePage(int page)
+    {
+        CurrentPage = page;
+    }
+
+    private void OpenAddModal()
+    {
+        newBook = new Book();
+        ShowModal = true;
+    }
+
+    private void OpenEditModal(Book bookToEdit)
+    {
+        newBook = new Book
+        {
+            Id = bookToEdit.Id,
+            Title = bookToEdit.Title,
+            Author = bookToEdit.Author,
+            Categyry = bookToEdit.Categyry,
+            IsBorrowed = bookToEdit.IsBorrowed,
+            DueDate = bookToEdit.DueDate
+        };
         ShowModal = true;
     }
 
@@ -186,8 +315,54 @@
     {
         ShowModal = false;
     }
+
+    private async Task SaveBook()
+    {
+        if (string.IsNullOrWhiteSpace(newBook.Title) || string.IsNullOrWhiteSpace(newBook.Author))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Please enter Title and Author.");
+            return;
+        }
+
+        try
+        {
+            if (newBook.Id == 0)
+            {
+                await BookService.AddBookAsync(newBook);
+            }
+            else
+            {
+                await BookService.UpdateBookAsync(newBook);
+            }
+
+            await LoadBooks();
+            CloseModal();
+            newBook = new Book();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteBook(int id)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this book?");
+        if (confirmed)
+        {
+            await BookService.DeleteBookAsync(id);
+            await LoadBooks();
+
+            if (CurrentPage > TotalPages && CurrentPage > 1)
+            {
+                CurrentPage--;
+            }
+        }
+    }
 }
+
 <style>
+    /* CSS unchanged as requested */
     :root {
         --primary: #007bff;
         --sidebar-bg: #ffffff;
@@ -208,6 +383,7 @@
         background-color: var(--main-bg);
         color: var(--text-dark);
     }
+
     .sidebar {
         background: var(--sidebar-bg);
         padding: 20px;
@@ -326,7 +502,7 @@
         align-items: center;
         gap: 8px;
         background-color: var(--primary);
-		color: white;
+        color: white;
     }
 
     .btn-primary {
@@ -632,48 +808,3 @@
         }
     }
 </style>
-
-@code {
-    private List<Book>? books;
-    private Book newBook = new Book();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadBooks();
-    }
-
-    private async Task LoadBooks()
-    {
-        books = await BookService.GetBooksAsync();
-    }
-
-    private async Task AddNewBook()
-    {
-        if (string.IsNullOrWhiteSpace(newBook.Title))
-        {
-            await JSRuntime.InvokeVoidAsync("alert", "Please enter the books's name.");
-            return;
-        }
-        if (string.IsNullOrWhiteSpace(newBook.Author))
-        {
-            await JSRuntime.InvokeVoidAsync("alert", "Please enter the authors's name.");
-            return;
-        }
-
-        await BookService.AddBookAsync(newBook);
-        newBook = new Book(); // Reset form
-        await LoadBooks(); // Refresh list
-    }
-
-    private async Task DeleteBook(int id)
-    {
-        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this book?");
-
-        if (confirmed)
-        {
-            await BookService.DeleteBookAsync(id);
-            await LoadBooks();
-            CloseModal();
-        }
-    }
-}

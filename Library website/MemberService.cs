@@ -47,5 +47,22 @@ namespace MyLibraryApp.Data
             return await _context.Members.FindAsync(id);
 
         }
+        // In MemberService.cs
+
+        public async Task UpdateMemberAsync(Member member)
+        {
+            // 1. Check if the database context is already tracking a Member with this ID
+            var existingTracked = _context.Members.Local.FirstOrDefault(m => m.Id == member.Id);
+
+            // 2. If found, tell EF Core to stop tracking the old one ("Let go of the memory")
+            if (existingTracked != null)
+            {
+                _context.Entry(existingTracked).State = EntityState.Detached;
+            }
+
+            // 3. Now it is safe to update with the new object
+            _context.Members.Update(member);
+            await _context.SaveChangesAsync();
+        }
     }
 }

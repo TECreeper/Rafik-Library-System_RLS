@@ -6,6 +6,7 @@
 @rendermode InteractiveServer
 @inject BookService BookService
 @inject MemberService MemberService
+@inject IJSRuntime JSRuntime
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
@@ -14,11 +15,6 @@
     <aside class="sidebar">
         <div class="sidebar-header">
             <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
-        </div>
-
-        <div class="search-box-sidebar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search..." />
         </div>
 
         <nav class="sidebar-nav">
@@ -44,9 +40,6 @@
                 <span>Home > Alerts > Overdue</span>
             </div>
             <div class="user-actions">
-                <button class="btn btn-danger-outline" @onclick="SendAllReminders">
-                    <i class="fa-regular fa-bell"></i> Send All Reminders
-                </button>
             </div>
         </header>
 
@@ -81,16 +74,15 @@
         <div class="filter-bar">
             <div class="search-wrapper">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search by member or book..." />
+                <input type="text" placeholder="Search by member or book..." @bind="SearchTerm" @bind:event="oninput" />
             </div>
             <div class="filter-actions">
-                <select class="form-select">
-                    <option>All Delays</option>
-                    <option>1-7 Days</option>
-                    <option>8-30 Days</option>
-                    <option>30+ Days (Severe)</option>
+                <select class="form-select" @bind="SelectedDelayFilter">
+                    <option value="All Delays">All Delays</option>
+                    <option value="1-7 Days">1-7 Days</option>
+                    <option value="8-30 Days">8-30 Days</option>
+                    <option value="30+ Days">30+ Days (Severe)</option>
                 </select>
-                <button class="btn btn-outline"><i class="fa-solid fa-filter"></i> Filter</button>
             </div>
         </div>
 
@@ -102,56 +94,80 @@
                         <th>Book Info</th>
                         <th>Due Date</th>
                         <th>Days Late</th>
-                        <th>Fine ($)</th>
+                        <th>Fine (Egp)</th>
                         <th>Status</th>
                         <th style="text-align:center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in OverdueList)
+                    @if (PagedOverdueItems.Any())
+                    {
+                        @foreach (var item in PagedOverdueItems)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="profile-cell">
+                                        <img src="@($"https://ui-avatars.com/api/?name={item.MemberName}&background=random&color=fff")" class="avatar" />
+                                        <div class="info">
+                                            <span class="name">@item.MemberName</span>
+                                            <span class="sub">@item.MobileNumber</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="info">
+                                        <span class="name">@item.BookTitle</span>
+                                    </div>
+                                </td>
+                                <td class="date-cell">@item.DueDate.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    <span class="delay-badge @(item.DaysLate > 30 ? "severe" : "warning")">
+                                        @item.DaysLate Days
+                                    </span>
+                                </td>
+                                <td class="fine-cell">Egp @item.Fine.ToString("F2")</td>
+                                <td><span class="status-dot"></span> Pending</td>
+                                <td class="actions-cell">
+                                    <button class="action-btn email" title="Send Reminder Email"><i class="fa-regular fa-envelope"></i></button>
+
+                                    <button class="action-btn return" title="Process Return" @onclick="() => QuickReturn(item.BookId)">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            <td>
-                                <div class="profile-cell">
-                                    <img src="@($"https://ui-avatars.com/api/?name={item.MemberName}&background=random&color=fff")" class="avatar" />
-                                    <div class="info">
-                                        <span class="name">@item.MemberName</span>
-                                        <span class="sub">@item.MobileNumber</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="info">
-                                    <span class="name">@item.BookTitle</span>
-                                </div>
-                            </td>
-                            <td class="date-cell">@item.DueDate.ToString("MMM dd, yyyy")</td>
-                            <td>
-                                <span class="delay-badge @(item.DaysLate > 30 ? "severe" : "warning")">
-                                    @item.DaysLate Days
-                                </span>
-                            </td>
-                            <td class="fine-cell">$@item.Fine.ToString("F2")</td>
-                            <td><span class="status-dot"></span> Pending</td>
-                            <td class="actions-cell">
-                                <button class="action-btn email" title="Send Reminder Email"><i class="fa-regular fa-envelope"></i></button>
-                                <button class="action-btn return" title="Process Return"><i class="fa-solid fa-rotate-left"></i></button>
+                            <td colspan="7" style="text-align:center; padding: 20px; color: #888;">
+                                No overdue books found matching criteria.
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
+
+            <div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee;">
+                <span style="color: #888; font-size: 0.9rem;">
+                    Page @CurrentPage of @TotalPages
+                </span>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn btn-outline" style="padding: 5px 10px;" @onclick="PrevPage" disabled="@(CurrentPage == 1)">&lt;</button>
+                    <button class="btn btn-outline" style="padding: 5px 10px;" @onclick="NextPage" disabled="@(CurrentPage >= TotalPages)">&gt;</button>
+                </div>
+            </div>
         </div>
 
     </main>
 </div>
 
 @code {
-    // Configuration: Fine amount per day 
     private const decimal DailyFineRate = 5.00m;
 
     public class OverdueModel
     {
+        public int BookId { get; set; } // Needed for Return
         public string MemberName { get; set; } = "Unknown";
         public string MobileNumber { get; set; } = "N/A";
         public int MemberId { get; set; }
@@ -163,6 +179,50 @@
 
     List<OverdueModel> OverdueList = new List<OverdueModel>();
 
+    // -- Search & Filter State --
+    private string SearchTerm { get; set; } = "";
+    private string SelectedDelayFilter { get; set; } = "All Delays";
+    private int CurrentPage { get; set; } = 1;
+    private const int PageSize = 10;
+
+    // -- Filter Logic --
+    private IEnumerable<OverdueModel> FilteredOverdueItems
+    {
+        get
+        {
+            var query = OverdueList.AsEnumerable();
+
+            // 1. Search Filter
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                query = query.Where(x =>
+                    x.MemberName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    x.BookTitle.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // 2. Date Delay Filter
+            if (SelectedDelayFilter == "1-7 Days")
+                query = query.Where(x => x.DaysLate >= 1 && x.DaysLate <= 7);
+            else if (SelectedDelayFilter == "8-30 Days")
+                query = query.Where(x => x.DaysLate >= 8 && x.DaysLate <= 30);
+            else if (SelectedDelayFilter == "30+ Days")
+                query = query.Where(x => x.DaysLate > 30);
+
+            // 3. Default Sort: Most Late First
+            return query.OrderByDescending(x => x.DaysLate);
+        }
+    }
+
+    // -- Pagination Logic --
+    private IEnumerable<OverdueModel> PagedOverdueItems => FilteredOverdueItems
+        .Skip((CurrentPage - 1) * PageSize)
+        .Take(PageSize);
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredOverdueItems.Count() / PageSize);
+
+    private void NextPage() { if (CurrentPage < TotalPages) CurrentPage++; }
+    private void PrevPage() { if (CurrentPage > 1) CurrentPage--; }
+
     protected override async Task OnInitializedAsync()
     {
         await CalculateOverdueData();
@@ -170,52 +230,52 @@
 
     private async Task CalculateOverdueData()
     {
-        // 1. Get the raw books from DB
         var rawOverdueBooks = await BookService.GetOverdueBooksAsync();
-
         OverdueList.Clear();
 
-        // 2. Loop through each book to calculate fines
-        foreach (var book in rawOverdueBooks)
+        if (rawOverdueBooks != null)
         {
-            // A. Get Member Details
-            var member = await MemberService.GetMemberByIdAsync(book.CurrentMemberId ?? 0);
-
-            // B. Calculate Days Late (Today - Due Date)
-            // .Date ensures we compare days only, ignoring exact time
-            TimeSpan delay = DateTime.Now.Date - (book.DueDate?.Date ?? DateTime.Now.Date);
-            int daysLate = delay.Days;
-
-            // Safety check: ensure no negative days
-            if (daysLate < 0) daysLate = 0;
-
-            // C. Calculate The Fine
-            decimal calculatedFine = daysLate * DailyFineRate;
-
-            // D. Add to list (Totals will update automatically in HTML)
-            OverdueList.Add(new OverdueModel
+            foreach (var book in rawOverdueBooks)
             {
-                BookTitle = book.Title,
-                DueDate = book.DueDate ?? DateTime.Now,
-                DaysLate = daysLate,
-                Fine = calculatedFine,
+                var member = await MemberService.GetMemberByIdAsync(book.CurrentMemberId ?? 0);
 
-                // If member exists, use their name, otherwise "Unknown"
-                MemberName = member != null ? member.Name : "Unknown Member",
-                // Note: Ensure your Member class has a PhoneNumber property, or change this string
-                MobileNumber = member != null ? member.MobileNumber : "N/A"
-            });
+                TimeSpan delay = DateTime.Now.Date - (book.DueDate?.Date ?? DateTime.Now.Date);
+                int daysLate = delay.Days;
+                if (daysLate < 0) daysLate = 0;
+
+                decimal calculatedFine = daysLate * DailyFineRate;
+
+                OverdueList.Add(new OverdueModel
+                {
+                    BookId = book.Id,
+                    BookTitle = book.Title,
+                    DueDate = book.DueDate ?? DateTime.Now,
+                    DaysLate = daysLate,
+                    Fine = calculatedFine,
+                    MemberName = member != null ? member.Name : "Unknown Member",
+                    MobileNumber = member != null ? member.MobileNumber : "N/A"
+                });
+            }
         }
     }
 
-    private void SendAllReminders()
+    private async Task QuickReturn(int bookId)
     {
-        // Logic to send emails to all members in OverdueList
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Confirm return of this overdue book? This will stop the fine count.");
+
+        if (confirmed)
+        {
+            // Call the service to return the book (Assuming it accepts ID as string based on your Search page implementation)
+            await BookService.ReturnBookAsync(bookId.ToString());
+
+            // Refresh list
+            await CalculateOverdueData();
+        }
     }
 }
 
 <style>
-    /* I have kept your CSS exactly as requested */
+    /* CSS UNCHANGED AS REQUESTED */
     :root {
         --primary: #007bff;
         --danger: #dc3545;

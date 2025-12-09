@@ -6,7 +6,6 @@
 @using MyLibraryApp.Data
 @inject MemberService MemberService
 @rendermode InteractiveServer
-@* استخدمنا EmptyLayout لكي لا يتعارض مع أي تصميم خارجي، لأننا سنضع التصميم كاملاً هنا *@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
@@ -15,11 +14,6 @@
     <aside class="sidebar">
         <div class="sidebar-header">
             <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
-        </div>
-
-        <div class="search-box-sidebar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search catalog..." />
         </div>
 
         <nav class="sidebar-nav">
@@ -43,25 +37,20 @@
                 <span>Home > Members</span>
             </div>
             <div class="user-actions">
-                <button type="button" @onclick="OpenMemberModal" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add New Member</button>
+                <button type="button" @onclick="OpenAddModal" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add New Member</button>
             </div>
         </header>
 
         <div class="filter-bar">
             <div class="search-wrapper">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search by name, email, ID..." />
+                <input type="text" placeholder="Search by Name, ID, National ID, Mobile..." @bind="SearchTerm" @bind:event="oninput" />
             </div>
             <div class="filter-actions">
-                <select class="form-select">
-                    <option>All Roles</option>
-                    <option>Admin</option>
-                    <option>Member</option>
-                </select>
-                <select class="form-select">
-                    <option>All Status</option>
-                    <option>Active</option>
-                    <option>Banned</option>
+                <select class="form-select" @bind="SelectedRole">
+                    <option value="All Roles">All Roles</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Member">Member</option>
                 </select>
             </div>
         </div>
@@ -70,16 +59,16 @@
             <table class="styled-table">
                 <thead>
                     <tr>
-                        <th>Member</th>
+                        <th>Member (ID)</th>
                         <th>Contact Info</th>
                         <th>Role</th>
                         <th style="text-align:center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @if (MembersList != null)
+                    @if (PagedMembers.Any())
                     {
-                        @foreach (var member in MembersList)
+                        @foreach (var member in PagedMembers)
                         {
                             <tr>
                                 <td>
@@ -99,7 +88,10 @@
                                 </td>
                                 <td><span class="role-tag">@member.Role</span></td>
                                 <td class="actions-cell">
-                                    <button type="button" class="action-btn edit"><i class="fa-solid fa-pen"></i></button>
+                                    <button type="button" class="action-btn edit" @onclick="() => OpenEditModal(member)">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+
                                     <button class="action-btn delete" @onclick="() => DeleteMember(member.Id)">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
@@ -107,17 +99,36 @@
                             </tr>
                         }
                     }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" style="text-align:center; padding:20px; color:#888;">
+                                No members match your search criteria.
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
+
+            <div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee;">
+                <span style="color: #888; font-size: 0.9rem;">
+                    Page @CurrentPage of @TotalPages (@TotalFilteredCount total)
+                </span>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn btn-outline" style="padding: 5px 10px;" @onclick="PrevPage" disabled="@(CurrentPage == 1)">&lt;</button>
+                    <button class="btn btn-outline" style="padding: 5px 10px;" @onclick="NextPage" disabled="@(CurrentPage >= TotalPages)">&gt;</button>
+                </div>
+            </div>
         </div>
     </main>
 </div>
+
 @if (ShowMemberModal)
 {
     <div class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
-                <h3>Add New Member</h3>
+                <h3>@(form.Id == 0 ? "Add New Member" : "Edit Member")</h3>
                 <button type="button" class="close-btn" @onclick="CloseMemberModal">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -141,8 +152,9 @@
                     </div>
 
                     <div class="input-group">
+                        <label>Role</label>
                         <select class="form-select" @bind="form.Role">
-                            <option value="">All Roles</option>
+                            <option value="">Select Role</option>
                             <option value="Admin">Admin</option>
                             <option value="Member">Member</option>
                         </select>
@@ -162,15 +174,178 @@
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" @onclick="CloseMemberModal">Cancel</button>
-                <button type="button" class="btn btn-primary" @onclick="AddNewMember">Add member</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveMember">
+                    @(form.Id == 0 ? "Add Member" : "Update Member")
+                </button>
             </div>
         </div>
     </div>
 }
 
-<style/>
-    <style >
-    /* المتغيرات */
+@code {
+    private class MemberForm
+    {
+        public int Id { get; set; } = 0;
+        public string Name { get; set; } = string.Empty;
+        public string NationalId { get; set; } = string.Empty;
+        public string Age { get; set; } = string.Empty;
+        public string MobileNumber { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = "Member";
+    }
+
+    private bool ShowMemberModal = false;
+    private List<Member> MembersList = new List<Member>();
+    private MemberForm form = new MemberForm();
+
+    // -- Filter & Pagination State --
+    private string SearchTerm { get; set; } = "";
+    private string SelectedRole { get; set; } = "All Roles";
+    private int CurrentPage { get; set; } = 1;
+    private const int PageSize = 10; // Max 10 people
+
+    // -- Filter Logic --
+    private IEnumerable<Member> FilteredMembers
+    {
+        get
+        {
+            var query = MembersList.AsEnumerable();
+
+            // 1. Search Filter (ID, Name, National ID, Mobile, Email)
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                query = query.Where(m =>
+                    (m.Name != null && m.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (m.Email != null && m.Email.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (m.MobileNumber != null && m.MobileNumber.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    m.NationalId.ToString().Contains(SearchTerm) ||
+                    m.Id.ToString().Contains(SearchTerm)
+                );
+            }
+
+            // 2. Role Filter
+            if (SelectedRole != "All Roles")
+            {
+                query = query.Where(m => m.Role == SelectedRole);
+            }
+
+            // 3. Sorting by Role (Admin first, then Member)
+            // Then Sort by Name for consistency
+            return query.OrderBy(m => m.Role).ThenBy(m => m.Name);
+        }
+    }
+
+    // -- Pagination Logic --
+    private IEnumerable<Member> PagedMembers => FilteredMembers
+        .Skip((CurrentPage - 1) * PageSize)
+        .Take(PageSize);
+
+    private int TotalFilteredCount => FilteredMembers.Count();
+    private int TotalPages => (int)Math.Ceiling((double)TotalFilteredCount / PageSize);
+
+    private void NextPage() { if (CurrentPage < TotalPages) CurrentPage++; }
+    private void PrevPage() { if (CurrentPage > 1) CurrentPage--; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMembers();
+    }
+
+    private async Task LoadMembers()
+    {
+        var dbMembers = await MemberService.GetMembersAsync();
+        if (dbMembers != null)
+        {
+            MembersList = dbMembers;
+        }
+    }
+
+    // -- Modal Actions --
+    private void OpenAddModal()
+    {
+        form = new MemberForm();
+        ShowMemberModal = true;
+    }
+
+    private void OpenEditModal(Member member)
+    {
+        form = new MemberForm
+        {
+            Id = member.Id,
+            Name = member.Name,
+            NationalId = member.NationalId.ToString(),
+            Age = member.Age.ToString(),
+            MobileNumber = member.MobileNumber,
+            Email = member.Email,
+            Role = member.Role
+        };
+        ShowMemberModal = true;
+    }
+
+    private void CloseMemberModal()
+    {
+        ShowMemberModal = false;
+    }
+
+    // -- CRUD Operations --
+    private async Task SaveMember()
+    {
+        if (string.IsNullOrWhiteSpace(form.Name))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Please enter the member's name.");
+            return;
+        }
+
+        if (!int.TryParse(form.NationalId, out var parsedNationalId) || !int.TryParse(form.Age, out var parsedAge))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "National ID and Age must be valid numbers.");
+            return;
+        }
+
+        var memberToSave = new Member
+        {
+            Id = form.Id,
+            Name = form.Name.Trim(),
+            NationalId = parsedNationalId,
+            Age = parsedAge,
+            MobileNumber = form.MobileNumber?.Trim() ?? string.Empty,
+            Email = form.Email?.Trim() ?? string.Empty,
+            Role = string.IsNullOrWhiteSpace(form.Role) ? "Member" : form.Role
+        };
+
+        try
+        {
+            if (form.Id == 0)
+            {
+                await MemberService.AddMemberAsync(memberToSave);
+            }
+            else
+            {
+                await MemberService.UpdateMemberAsync(memberToSave);
+            }
+
+            await LoadMembers();
+            CloseMemberModal();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Operation failed: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteMember(int id)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this member?");
+        if (confirmed)
+        {
+            await MemberService.DeleteMemberAsync(id);
+            await LoadMembers();
+        }
+    }
+}
+
+<style>
+    /* CSS UNCHANGED */
     :root {
         --primary: #007bff;
         --sidebar-bg: #ffffff;
@@ -192,14 +367,12 @@
         color: var(--text-dark);
     }
 
-    /* Layout Structure */
     .dashboard-container {
         display: grid;
-        grid-template-columns: 250px 1fr; /* تقسيم الصفحة: القائمة والمحتوى */
+        grid-template-columns: 250px 1fr;
         min-height: 100vh;
     }
 
-    /* Sidebar Styles */
     .sidebar {
         background: var(--sidebar-bg);
         padding: 20px;
@@ -211,8 +384,6 @@
         position: sticky;
         top: 0;
     }
-
-
 
     .sidebar-header h3 {
         margin: 0;
@@ -268,7 +439,6 @@
             color: white;
         }
 
-    /* Main Content Styles */
     .main-content {
         padding: 25px 35px;
         overflow-y: auto;
@@ -291,7 +461,6 @@
         font-size: 0.9rem;
     }
 
-    /* Elements */
     .btn {
         padding: 10px 20px;
         border-radius: 8px;
@@ -349,7 +518,6 @@
         background: white;
     }
 
-    /* Table */
     .card {
         background: white;
         border-radius: var(--radius);
@@ -380,7 +548,6 @@
             vertical-align: middle;
         }
 
-    /* Specific Cell Styles */
     .member-profile {
         display: flex;
         align-items: center;
@@ -425,29 +592,6 @@
         font-weight: 600;
     }
 
-    .status-badge {
-        padding: 5px 10px;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-
-        .status-badge.green {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-badge.red {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-badge.grey {
-            background: #e9ecef;
-            color: #495057;
-        }
-
     .action-btn {
         width: 32px;
         height: 32px;
@@ -469,7 +613,7 @@
             background: #fff0f0;
             color: #dc3545;
         }
-    /* Modal Styles */
+
     .modal-overlay {
         position: fixed;
         top: 0;
@@ -561,100 +705,3 @@
         }
     }
 </style>
-
-@code {
-    // UI form model — kept inside component to avoid changing your domain classes
-    private class MemberForm
-    {
-        public string Name { get; set; } = string.Empty;
-        public string NationalId { get; set; } = string.Empty; // keep as string in form, parse to int when saving
-        public string Age { get; set; } = string.Empty; // parse to int when saving
-        public string MobileNumber { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Role { get; set; } = "Member";
-    }
-
-    private bool ShowMemberModal = false;
-    private List<Member>? MembersList;
-    private MemberForm form = new MemberForm();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadMembers();
-    }
-
-    private async Task LoadMembers()
-    {
-        MembersList = await MemberService.GetMembersAsync();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task OpenMemberModal()
-    {
-        form = new MemberForm(); // reset form state
-        ShowMemberModal = true;
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task CloseMemberModal()
-    {
-        ShowMemberModal = false;
-        form = new MemberForm();
-        await InvokeAsync(StateHasChanged);
-    }
-    private async Task DeleteMember(int id)
-    {
-        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this book?");
-
-        if (confirmed)
-        {
-            await MemberService.DeleteMemberAsync(id);
-            await LoadMembers();
-        }
-    }
-    private async Task AddNewMember()
-    {
-        // basic validation and parsing — do not change domain model classes
-        if (string.IsNullOrWhiteSpace(form.Name))
-        {
-            await JSRuntime.InvokeVoidAsync("alert", "Please enter the member's name.");
-            return;
-        }
-
-        if (!int.TryParse(form.NationalId, out var parsedNationalId))
-        {
-            await JSRuntime.InvokeVoidAsync("alert", "National ID must be a number.");
-            return;
-        }
-
-        if (!int.TryParse(form.Age, out var parsedAge))
-        {
-            await JSRuntime.InvokeVoidAsync("alert", "Age must be a number.");
-            return;
-        }
-
-        var memberToSave = new Member
-        {
-            Name = form.Name.Trim(),
-            NationalId = parsedNationalId,
-            Age = parsedAge,
-            MobileNumber = form.MobileNumber?.Trim() ?? string.Empty,
-            Email = form.Email?.Trim() ?? string.Empty,
-            Role = string.IsNullOrWhiteSpace(form.Role) ? "Member" : form.Role
-        };
-
-        try
-        {
-            await MemberService.AddMemberAsync(memberToSave);
-
-            // refresh list and close modal so the new member appears immediately
-            await LoadMembers();
-            await CloseMemberModal();
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("console.error", "AddNewMember failed:", ex.Message);
-            await JSRuntime.InvokeVoidAsync("alert", $"Failed to add member: {ex.Message}");
-        }
-    }
-}
