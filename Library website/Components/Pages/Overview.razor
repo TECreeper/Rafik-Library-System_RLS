@@ -25,6 +25,16 @@
             <a href="/overdue" class="nav-item alert-link">
                 <i class="fa-solid fa-circle-exclamation"></i> Overdues
             </a>
+            <div class="nav-item" @onclick="ToggleDarkMode" style="cursor: pointer; margin-top: auto;">
+    @if (isDarkMode)
+    {
+        <i class="fa-solid fa-sun" style="color: #ffc107;"></i> <span>Light Mode</span>
+    }
+    else
+    {
+        <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
+    }
+</div>
         </nav>
     </aside>
 
@@ -39,7 +49,7 @@
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" placeholder="Search books, members..." @bind="searchTerm" @bind:event="oninput" />
                 </div>
-                <button class="icon-btn"><i class="fa-regular fa-bell"></i></button>
+                @* <button class="icon-btn"><i class="fa-regular fa-bell"></i></button> *@
                 <div class="user-profile">
                     <img src="https://ui-avatars.com/api/?name=Al+Rafi&background=0D8ABC&color=fff" alt="User" />
                     <div class="user-info">
@@ -335,18 +345,53 @@
             await JSRuntime.InvokeVoidAsync("alert", "Error saving book: " + ex.Message);
         }
     }
+    // متغير للتحكم في الوضع
+    private bool isDarkMode = false;
+
+    private async Task ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+        
+        // نرسل الأمر للجافاسكريبت لتغيير الـ data-theme في الـ HTML
+        if (isDarkMode)
+        {
+            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "dark");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "light");
+        }
+    }
 }
 
 <style>
     /* CSS UNCHANGED */
     :root {
+        --background: white;
         --primary: #007bff;
         --sidebar-bg: #ffffff;
         --main-bg: #f4f7fa;
         --text-dark: #333;
+        --text-color: #333;
         --text-light: #888;
         --border-radius: 12px;
         --shadow: 0 2px 10px rgba(0,0,0,0.05);
+        --text-color: black;
+    }
+
+    [data-theme="dark"] {
+        --primary: #0e3759; /* أزرق أفتح قليلاً للتباين */
+        --main-bg: #121212; /* أسود داكن */
+        --sidebar-bg: #1e1e1e; /* رمادي غامق */
+        --card-bg: #1e1e1e; /* نفس لون السايدبار */
+        --text-main: #e0e0e0; /* نص أبيض مائل للرمادي */
+        --text-muted: #a0a0a0; /* رمادي فاتح */
+        --border-color: #333333; /* حدود غامقة */
+        --input-bg: #2d2d2d; /* خلفية الحقول */
+        --hover-bg: #333333; /* هوفر غامق */
+        --shadow: 0 4px 20px rgba(0,0,0,0.5); /* ظل أقوى في الليل */
+        --text-color: white;
+        --background: #1e1e1e;
     }
 
     * {
@@ -357,7 +402,7 @@
     body {
         margin: 0;
         background-color: var(--main-bg);
-        color: var(--text-dark);
+        color: var(--text-color);
     }
 
     .dashboard-container {
@@ -379,7 +424,7 @@
 
     .sidebar-header h3 {
         margin: 0;
-        color: var(--primary);
+        color: #088af5;
         font-size: 1.2rem;
     }
 
@@ -445,7 +490,7 @@
     .breadcrumbs h2 {
         margin: 0;
         font-size: 1.4rem;
-        color: #333;
+        color: var(--text-color);
     }
 
     .breadcrumbs span {
@@ -517,7 +562,7 @@
     }
 
     .card {
-        background: white;
+        background: var(--background);
         border-radius: var(--border-radius);
         box-shadow: var(--shadow);
     }
@@ -843,6 +888,8 @@
         padding: 15px;
         border-radius: var(--border-radius);
         box-shadow: var(--shadow);
+        color: var(--text-color);
+        background-color: var(--background);
     }
 
     .stat-header {
@@ -857,6 +904,7 @@
         font-size: 1.5rem;
         font-weight: bold;
         margin-bottom: 5px;
+        color: var(--text-color);
     }
 
     .stat-sub {
@@ -1005,6 +1053,7 @@
         padding: 10px 0;
         border-bottom: 1px solid #f9f9f9;
         gap: 15px;
+        padding: 12px;
     }
 
     .rank {

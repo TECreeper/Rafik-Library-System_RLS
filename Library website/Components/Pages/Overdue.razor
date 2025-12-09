@@ -29,6 +29,16 @@
                 <i class="fa-solid fa-circle-exclamation"></i> Overdues
                 <span class="sidebar-badge">@OverdueList.Count</span>
             </a>
+                        <div class="nav-item" @onclick="ToggleDarkMode" style="cursor: pointer; margin-top: auto;">
+    @if (isDarkMode)
+    {
+        <i class="fa-solid fa-sun" style="color: #ffc107;"></i> <span>Light Mode</span>
+    }
+    else
+    {
+        <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
+    }
+</div>
         </nav>
     </aside>
 
@@ -272,6 +282,23 @@
             await CalculateOverdueData();
         }
     }
+    // متغير للتحكم في الوضع
+    private bool isDarkMode = false;
+
+    private async Task ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+        
+        // نرسل الأمر للجافاسكريبت لتغيير الـ data-theme في الـ HTML
+        if (isDarkMode)
+        {
+            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "dark");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "light");
+        }
+    }
 }
 
 <style>
@@ -285,7 +312,20 @@
         --text: #333;
         --radius: 12px;
     }
-
+        [data-theme="dark"] {
+        --primary: #0e3759; /* أزرق أفتح قليلاً للتباين */
+        --main-bg: #121212; /* أسود داكن */
+        --sidebar-bg: #1e1e1e; /* رمادي غامق */
+        --card-bg: #1e1e1e; /* نفس لون السايدبار */
+        --text-main: #e0e0e0; /* نص أبيض مائل للرمادي */
+        --text-muted: #a0a0a0; /* رمادي فاتح */
+        --border-color: #333333; /* حدود غامقة */
+        --input-bg: #2d2d2d; /* خلفية الحقول */
+        --hover-bg: #333333; /* هوفر غامق */
+        --shadow: 0 4px 20px rgba(0,0,0,0.5); /* ظل أقوى في الليل */
+        --text-color: white;
+        --background: #1e1e1e;
+    }
     * {
         box-sizing: border-box;
         font-family: 'Segoe UI', sans-serif;
@@ -294,7 +334,7 @@
     body {
         margin: 0;
         background: var(--main-bg);
-        color: var(--text);
+            color: var(--text-color);
     }
 
     .dashboard-container {
@@ -332,7 +372,7 @@
         gap: 10px;
         padding: 12px;
         text-decoration: none;
-        color: #555;
+        color: var(--text-color);
         margin-bottom: 5px;
         border-radius: 8px;
         position: relative;
