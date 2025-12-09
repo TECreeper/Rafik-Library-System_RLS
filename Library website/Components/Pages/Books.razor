@@ -88,14 +88,19 @@
                             <td><span class="category-tag">@book.Categyry</span></td>
                             <td class="Id">@book.Id</td>
                             <td>
-                                @if (book.IsBorrowed)
+                                @if (book.IsBorrowed && book.DueDate < DateTime.Now)
+                                {
+                                    <span class="status-badge red">Overdue</span>
+                                }
+                                else if (book.IsBorrowed)
                                 {
                                     <span class="status-badge orange">Borrowed</span>
+
+
                                 }
                                 else
                                 {
-
-                                       <span class="status-badge green">Available</span>
+                                    <span class="status-badge green">Available</span>
 
                                 }
                             </td>
@@ -462,6 +467,11 @@
             color: #856404;
         }
 
+        .status-badge.red {
+            background: darkred;
+            color: red;
+        }
+
     .actions-cell {
         text-align: center;
     }
@@ -663,6 +673,7 @@
         {
             await BookService.DeleteBookAsync(id);
             await LoadBooks();
+            CloseModal();
         }
     }
 }

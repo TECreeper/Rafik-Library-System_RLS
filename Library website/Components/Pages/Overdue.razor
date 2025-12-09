@@ -1,8 +1,11 @@
-﻿
-@page "/overdue"
+﻿@page "/overdue"
 @using Library_website.Components.Layout
+@using MyLibraryApp.Models
+@using MyLibraryApp.Data
 @layout EmptyLayout
 @rendermode InteractiveServer
+@inject BookService BookService
+@inject MemberService MemberService
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
@@ -12,7 +15,7 @@
         <div class="sidebar-header">
             <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
         </div>
-        
+
         <div class="search-box-sidebar">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" placeholder="Search..." />
@@ -24,7 +27,7 @@
             <a href="/books" class="nav-item"><i class="fa-solid fa-book"></i> Books</a>
             <a href="/members" class="nav-item"><i class="fa-solid fa-users"></i> Members</a>
             <a href="/borrow" class="nav-item"><i class="fa-solid fa-arrow-right-arrow-left"></i> Borrow & Returns</a>
-            
+
             <p class="nav-label">Alerts</p>
             <a href="/overdue" class="nav-item active alert-link">
                 <i class="fa-solid fa-circle-exclamation"></i> Overdues
@@ -34,7 +37,7 @@
     </aside>
 
     <main class="main-content">
-        
+
         <header class="top-bar">
             <div class="breadcrumbs">
                 <h2>Overdue Books</h2>
@@ -60,7 +63,9 @@
                 <div class="stat-icon orange-bg"><i class="fa-solid fa-clock"></i></div>
                 <div class="stat-info">
                     <span class="label">Avg. Delay</span>
-                    <span class="value">12 Days</span>
+                    <span class="value">
+                        @(OverdueList.Any() ? (int)OverdueList.Average(x => x.DaysLate) : 0) Days
+                    </span>
                 </div>
             </div>
 
@@ -68,7 +73,7 @@
                 <div class="stat-icon blue-bg"><i class="fa-solid fa-coins"></i></div>
                 <div class="stat-info">
                     <span class="label">Total Fines</span>
-                    <span class="value">$@OverdueList.Sum(x => x.Fine).00</span>
+                    <span class="value">Egp @OverdueList.Sum(x => x.Fine).ToString("F2")</span>
                 </div>
             </div>
         </div>
@@ -111,14 +116,13 @@
                                     <img src="@($"https://ui-avatars.com/api/?name={item.MemberName}&background=random&color=fff")" class="avatar" />
                                     <div class="info">
                                         <span class="name">@item.MemberName</span>
-                                        <span class="sub">@item.MemberPhone</span>
+                                        <span class="sub">@item.MobileNumber</span>
                                     </div>
                                 </div>
                             </td>
                             <td>
                                 <div class="info">
                                     <span class="name">@item.BookTitle</span>
-                                    <span class="sub">ISBN: @item.ISBN</span>
                                 </div>
                             </td>
                             <td class="date-cell">@item.DueDate.ToString("MMM dd, yyyy")</td>
@@ -127,7 +131,7 @@
                                     @item.DaysLate Days
                                 </span>
                             </td>
-                            <td class="fine-cell">$@item.Fine</td>
+                            <td class="fine-cell">$@item.Fine.ToString("F2")</td>
                             <td><span class="status-dot"></span> Pending</td>
                             <td class="actions-cell">
                                 <button class="action-btn email" title="Send Reminder Email"><i class="fa-regular fa-envelope"></i></button>
@@ -143,29 +147,75 @@
 </div>
 
 @code {
+    // Configuration: Fine amount per day 
+    private const decimal DailyFineRate = 5.00m;
+
     public class OverdueModel
     {
-        public string MemberName { get; set; }
-        public string MemberPhone { get; set; }
-        public string BookTitle { get; set; }
-        public string ISBN { get; set; }
+        public string MemberName { get; set; } = "Unknown";
+        public string MobileNumber { get; set; } = "N/A";
+        public int MemberId { get; set; }
+        public string BookTitle { get; set; } = "";
         public DateTime DueDate { get; set; }
         public int DaysLate { get; set; }
         public decimal Fine { get; set; }
     }
 
-    List<OverdueModel> OverdueList = new List<OverdueModel>
-    {
+    List<OverdueModel> OverdueList = new List<OverdueModel>();
 
-    };
+    protected override async Task OnInitializedAsync()
+    {
+        await CalculateOverdueData();
+    }
+
+    private async Task CalculateOverdueData()
+    {
+        // 1. Get the raw books from DB
+        var rawOverdueBooks = await BookService.GetOverdueBooksAsync();
+
+        OverdueList.Clear();
+
+        // 2. Loop through each book to calculate fines
+        foreach (var book in rawOverdueBooks)
+        {
+            // A. Get Member Details
+            var member = await MemberService.GetMemberByIdAsync(book.CurrentMemberId ?? 0);
+
+            // B. Calculate Days Late (Today - Due Date)
+            // .Date ensures we compare days only, ignoring exact time
+            TimeSpan delay = DateTime.Now.Date - (book.DueDate?.Date ?? DateTime.Now.Date);
+            int daysLate = delay.Days;
+
+            // Safety check: ensure no negative days
+            if (daysLate < 0) daysLate = 0;
+
+            // C. Calculate The Fine
+            decimal calculatedFine = daysLate * DailyFineRate;
+
+            // D. Add to list (Totals will update automatically in HTML)
+            OverdueList.Add(new OverdueModel
+            {
+                BookTitle = book.Title,
+                DueDate = book.DueDate ?? DateTime.Now,
+                DaysLate = daysLate,
+                Fine = calculatedFine,
+
+                // If member exists, use their name, otherwise "Unknown"
+                MemberName = member != null ? member.Name : "Unknown Member",
+                // Note: Ensure your Member class has a PhoneNumber property, or change this string
+                MobileNumber = member != null ? member.MobileNumber : "N/A"
+            });
+        }
+    }
 
     private void SendAllReminders()
     {
-        // هنا يمكن وضع كود إرسال إيميلات جماعية
+        // Logic to send emails to all members in OverdueList
     }
 }
 
 <style>
+    /* I have kept your CSS exactly as requested */
     :root {
         --primary: #007bff;
         --danger: #dc3545;

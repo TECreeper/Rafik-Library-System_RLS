@@ -122,6 +122,17 @@ private readonly LibraryDbContext _context;
             await _context.SaveChangesAsync();
             return "Success";
         }
+
+
+        // In BookService.cs
+
+        public async Task<List<Book>> GetOverdueBooksAsync()
+        {
+            // Fetch books where IsBorrowed is TRUE and DueDate is in the PAST
+            return await _context.Books
+                                 .Where(b => b.IsBorrowed && b.DueDate < DateTime.Now)
+                                 .ToListAsync();
+        }
         public async Task<int> GetTotalBooksAsync()
         {
             return await _context.Books.CountAsync();
