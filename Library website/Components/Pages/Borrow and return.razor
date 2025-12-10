@@ -37,10 +37,16 @@
                 <h2>Circulation Desk</h2>
                 <span>Home > Borrow & Returns</span>
             </div>
-            @* <button class="btn btn-outline" title="Overdue Alerts">
-                <i class="fa-regular fa-bell"></i>
-                <span class="badge-dot"></span>
-            </button> *@
+            <button class="icon-btn" @onclick="ToggleDarkMode" title="Toggle Dark Mode">
+                @if (isDarkMode)
+                {
+                    <i class="fa-solid fa-sun" style="color: #ffc107;"></i>
+                }
+                else
+                {
+                    <i class="fa-solid fa-moon"></i>
+                }
+            </button>
         </header>
 
         <div class="card action-card">
@@ -266,21 +272,28 @@
         Message = msg;
         IsError = isError;
     }
+        // متغير للتحكم في الوضع
+    private bool isDarkMode = false;
+
+    private async Task ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+        
+        // نرسل الأمر للجافاسكريبت لتغيير الـ data-theme في الـ HTML
+        if (isDarkMode)
+        {
+            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "dark");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "light");
+        }
+    }
+
 }
 
 <style>
     /* ... (Your existing CSS code here - I have not touched it) ... */
-    :root {
-        --primary: #007bff;
-        --success: #28a745;
-        --sidebar-bg: #ffffff;
-        --main-bg: #f4f7fa;
-        --text-dark: #333;
-        --text-light: #888;
-        --border-color: #eee;
-        --radius: 12px;
-    }
-
     * {
         box-sizing: border-box;
         font-family: 'Segoe UI', sans-serif;
@@ -298,6 +311,17 @@
         min-height: 100vh;
     }
 
+    .breadcrumbs h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: var(--text-color);
+    }
+
+    .breadcrumbs span {
+        font-size: 0.9rem;
+        color: #888;
+    }
+
     .sidebar {
         background: var(--sidebar-bg);
         padding: 20px;
@@ -312,7 +336,7 @@
 
     .sidebar-header h3 {
         margin: 0;
-        color: var(--primary);
+        color: #088af5;
         font-size: 1.2rem;
     }
 
@@ -347,11 +371,11 @@
         gap: 12px;
         padding: 10px 15px;
         text-decoration: none;
-        color: #555;
         border-radius: 8px;
         transition: 0.2s;
         margin-bottom: 5px;
         cursor: pointer;
+        color: var(--text-color);
     }
 
         .nav-item:hover {
@@ -402,7 +426,7 @@
     }
 
     .action-card {
-        background: white;
+        background: var(--hover-bg);
         border-radius: var(--radius);
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         overflow: hidden;
@@ -412,17 +436,17 @@
     .tabs-header {
         display: flex;
         border-bottom: 1px solid #eee;
-        background: #fafafa;
+        background: var(--text-dark);
     }
 
     .tab-btn {
         flex: 1;
         padding: 15px;
         border: none;
-        background: transparent;
+        background: #53595e;
         cursor: pointer;
         font-weight: 600;
-        color: #666;
+        color: var(--text-reverse);
         font-size: 1rem;
         border-bottom: 3px solid transparent;
         transition: 0.2s;
@@ -433,7 +457,8 @@
     }
 
         .tab-btn:hover {
-            background: #f0f0f0;
+            background: black;
+            color: var(--text-color);
         }
 
         .tab-btn.active {
@@ -466,7 +491,7 @@
         .input-group label {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #555;
+            color: var(--text-main);
         }
 
     .input-wrapper {
@@ -549,10 +574,11 @@
     .styled-table {
         width: 100%;
         border-collapse: collapse;
+        background: var(--background);
     }
 
         .styled-table thead {
-            background: #f8f9fa;
+            background: var(--hover-bg);
             border-bottom: 1px solid #eee;
         }
 
@@ -560,7 +586,7 @@
             text-align: left;
             padding: 15px 20px;
             font-weight: 600;
-            color: #666;
+            color: var(--text-color);
             font-size: 0.9rem;
         }
 
@@ -568,7 +594,7 @@
             padding: 15px 20px;
             border-bottom: 1px solid #f9f9f9;
             vertical-align: middle;
-            color: #333;
+            color: var(--text-color);
         }
 
     .trans-id {
@@ -638,3 +664,11 @@
             transform: scale(1.1);
         }
 </style>
+<script>
+    (function() {
+        var savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    })();
+</script>

@@ -29,16 +29,6 @@
                 <i class="fa-solid fa-circle-exclamation"></i> Overdues
                 <span class="sidebar-badge">@OverdueList.Count</span>
             </a>
-                        <div class="nav-item" @onclick="ToggleDarkMode" style="cursor: pointer; margin-top: auto;">
-    @if (isDarkMode)
-    {
-        <i class="fa-solid fa-sun" style="color: #ffc107;"></i> <span>Light Mode</span>
-    }
-    else
-    {
-        <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
-    }
-</div>
         </nav>
     </aside>
 
@@ -50,6 +40,16 @@
                 <span>Home > Alerts > Overdue</span>
             </div>
             <div class="user-actions">
+                <button class="icon-btn" @onclick="ToggleDarkMode" title="Toggle Dark Mode">
+                    @if (isDarkMode)
+                    {
+                        <i class="fa-solid fa-sun" style="color: #ffc107;"></i>
+                    }
+                    else
+                    {
+                        <i class="fa-solid fa-moon"></i>
+                    }
+                </button>
             </div>
         </header>
 
@@ -158,8 +158,8 @@
                 </tbody>
             </table>
 
-            <div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee;">
-                <span style="color: #888; font-size: 0.9rem;">
+            <div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; background: var(--hover-bg);">
+                <span style="color: #888; font-size: 0.9rem; ">
                     Page @CurrentPage of @TotalPages
                 </span>
                 <div style="display: flex; gap: 5px;">
@@ -283,49 +283,43 @@
         }
     }
     // متغير للتحكم في الوضع
+    // متغير للتحكم في الوضع
+    // ... (بقية الكود الخاص بالكتب كما هو) ...
+
     private bool isDarkMode = false;
+
+    // هذه الدالة تعمل عند فتح الصفحة
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // نسأل المتصفح: ما هو الوضع المحفوظ؟
+            var theme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "theme");
+
+            // إذا كان محفوظاً كـ dark، نحدث المتغير ليصبح الزر صحيحاً
+            if (theme == "dark")
+            {
+                isDarkMode = true;
+                StateHasChanged(); // تحديث الأيقونة من شمس لقمر
+            }
+        }
+    }
 
     private async Task ToggleDarkMode()
     {
         isDarkMode = !isDarkMode;
-        
-        // نرسل الأمر للجافاسكريبت لتغيير الـ data-theme في الـ HTML
-        if (isDarkMode)
-        {
-            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "dark");
-        }
-        else
-        {
-            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "light");
-        }
+        var theme = isDarkMode ? "dark" : "light";
+
+        // تغيير الـ HTML
+        await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", theme);
+
+        // حفظ الاختيار في الذاكرة
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", theme);
     }
 }
 
 <style>
     /* CSS UNCHANGED AS REQUESTED */
-    :root {
-        --primary: #007bff;
-        --danger: #dc3545;
-        --warning: #ffc107;
-        --sidebar-bg: #fff;
-        --main-bg: #f4f7fa;
-        --text: #333;
-        --radius: 12px;
-    }
-        [data-theme="dark"] {
-        --primary: #0e3759; /* أزرق أفتح قليلاً للتباين */
-        --main-bg: #121212; /* أسود داكن */
-        --sidebar-bg: #1e1e1e; /* رمادي غامق */
-        --card-bg: #1e1e1e; /* نفس لون السايدبار */
-        --text-main: #e0e0e0; /* نص أبيض مائل للرمادي */
-        --text-muted: #a0a0a0; /* رمادي فاتح */
-        --border-color: #333333; /* حدود غامقة */
-        --input-bg: #2d2d2d; /* خلفية الحقول */
-        --hover-bg: #333333; /* هوفر غامق */
-        --shadow: 0 4px 20px rgba(0,0,0,0.5); /* ظل أقوى في الليل */
-        --text-color: white;
-        --background: #1e1e1e;
-    }
     * {
         box-sizing: border-box;
         font-family: 'Segoe UI', sans-serif;
@@ -354,7 +348,7 @@
     }
 
     .sidebar-header h3 {
-        color: var(--primary);
+        color: #088af5;
         margin: 0 0 20px 0;
         font-size: 1.2rem;
     }
@@ -447,7 +441,7 @@
     }
 
     .stat-card {
-        background: white;
+        background: var(--hover-bg);
         padding: 20px;
         border-radius: var(--radius);
         display: flex;
@@ -455,6 +449,7 @@
         gap: 20px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         border-left: 4px solid transparent;
+        color: var(--text-color);
     }
 
     .red-border {
@@ -547,7 +542,7 @@
         display: flex;
         justify-content: space-between;
         margin-bottom: 20px;
-        background: white;
+        background: var(--background);
         padding: 15px;
         border-radius: var(--radius);
         box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -562,6 +557,7 @@
         border-radius: 8px;
         width: 300px;
         border: 1px solid #eee;
+        color: black;
     }
 
         .search-wrapper input {
@@ -597,7 +593,7 @@
     }
 
         .styled-table thead {
-            background: #f8f9fa;
+            background: var(--hover-bg);
             border-bottom: 1px solid #eee;
         }
 
@@ -605,14 +601,15 @@
             text-align: left;
             padding: 15px 20px;
             font-weight: 600;
-            color: #666;
             font-size: 0.9rem;
+            color: var(--text-color);
         }
 
         .styled-table td {
             padding: 15px 20px;
             border-bottom: 1px solid #f9f9f9;
             vertical-align: middle;
+            background: var(--background);
         }
 
     .profile-cell {
@@ -705,3 +702,11 @@
             transform: scale(1.1);
         }
 </style>
+<script>
+    (function() {
+        var savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    })();
+</script>

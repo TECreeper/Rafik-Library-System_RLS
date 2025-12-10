@@ -4,11 +4,20 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="app.css" />
     <base href="/" />
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="Library website.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
+    <script>
+        // كود يعمل فوراً لقراءة الذاكرة وتطبيق اللون
+        (function() {
+            var savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <HeadOutlet />
 </head>
 

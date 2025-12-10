@@ -25,16 +25,6 @@
             <a href="/overdue" class="nav-item alert-link">
                 <i class="fa-solid fa-circle-exclamation"></i> Overdues
             </a>
-                        <div class="nav-item" @onclick="ToggleDarkMode" style="cursor: pointer; margin-top: auto;">
-    @if (isDarkMode)
-    {
-        <i class="fa-solid fa-sun" style="color: #ffc107;"></i> <span>Light Mode</span>
-    }
-    else
-    {
-        <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
-    }
-</div>
         </nav>
     </aside>
 
@@ -45,6 +35,16 @@
                 <span>Home > Books</span>
             </div>
             <div class="user-actions">
+                <button class="icon-btn" @onclick="ToggleDarkMode" title="Toggle Dark Mode">
+                    @if (isDarkMode)
+                    {
+                        <i class="fa-solid fa-sun" style="color: #ffc107;"></i>
+                    }
+                    else
+                    {
+                        <i class="fa-solid fa-moon"></i>
+                    }
+                </button>
                 <button @onclick="OpenAddModal" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add New Book</button>
             </div>
         </header>
@@ -370,51 +370,47 @@
             }
         }
     }
-    // متغير للتحكم في الوضع
+
+    // ==========================================
+    // === هذا هو الجزء الخاص بالـ Dark Mode ====
+    // ==========================================
+
     private bool isDarkMode = false;
+
+    // هذه الدالة تعمل فور انتهاء تحميل الصفحة في المتصفح
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // 1. نسأل المتصفح: هل المستخدم اختار الوضع الليلي سابقاً؟
+            var theme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "theme");
+
+            // 2. إذا كانت الإجابة "نعم"، نقوم بتحديث المتغير والأيقونة
+            if (theme == "dark")
+            {
+                isDarkMode = true;
+
+                // أمر مهم جداً: نخبر الصفحة بأن تعيد رسم نفسها لتغيير الأيقونة من قمر لشمس
+                StateHasChanged();
+            }
+        }
+    }
 
     private async Task ToggleDarkMode()
     {
         isDarkMode = !isDarkMode;
-        
-        // نرسل الأمر للجافاسكريبت لتغيير الـ data-theme في الـ HTML
-        if (isDarkMode)
-        {
-            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "dark");
-        }
-        else
-        {
-            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "light");
-        }
+        var theme = isDarkMode ? "dark" : "light";
+
+        // 1. تغيير الألوان في الصفحة
+        await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", theme);
+
+        // 2. حفظ الاختيار في الذاكرة (لكي يعمل في الصفحات الأخرى)
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", theme);
     }
 }
 
 <style>
     /* CSS unchanged as requested */
-    :root {
-        --primary: #007bff;
-        --sidebar-bg: #ffffff;
-        --main-bg: #f4f7fa;
-        --text-dark: #333;
-        --text-light: #888;
-        --border-radius: 12px;
-        --shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-
-    [data-theme="dark"] {
-        --primary: #0e3759; /* أزرق أفتح قليلاً للتباين */
-        --main-bg: #121212; /* أسود داكن */
-        --sidebar-bg: #1e1e1e; /* رمادي غامق */
-        --card-bg: #1e1e1e; /* نفس لون السايدبار */
-        --text-main: #e0e0e0; /* نص أبيض مائل للرمادي */
-        --text-muted: #a0a0a0; /* رمادي فاتح */
-        --border-color: #333333; /* حدود غامقة */
-        --input-bg: #2d2d2d; /* خلفية الحقول */
-        --hover-bg: #333333; /* هوفر غامق */
-        --shadow: 0 4px 20px rgba(0,0,0,0.5); /* ظل أقوى في الليل */
-        --text-color: white;
-        --background: #1e1e1e;
-    }
 
     * {
         box-sizing: border-box;
@@ -459,7 +455,7 @@
 
     .sidebar-header h3 {
         margin: 0;
-        color: var(--primary);
+        color: #088af5;
         font-size: 1.2rem;
     }
 
@@ -499,6 +495,7 @@
         transition: 0.2s;
         margin-bottom: 5px;
         cursor: pointer;
+        color: var(--text-color);
     }
 
         .nav-item:hover {
@@ -559,7 +556,7 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
-        background: white;
+        background: var(--hover-bg);
         padding: 15px;
         border-radius: var(--border-radius);
         box-shadow: var(--shadow);
@@ -594,9 +591,9 @@
         border-radius: 6px;
         border: 1px solid #ddd;
         outline: none;
-        color: #555;
+        color: black;
         cursor: pointer;
-        background: white;
+        background: var(--bs-gray-500);
     }
 
     /* Table Styles */
@@ -613,18 +610,20 @@
     .styled-table {
         width: 100%;
         border-collapse: collapse;
+        background: var(--background);
     }
 
         .styled-table thead {
-            background-color: #f8f9fa;
+            background: var(--background);
             border-bottom: 1px solid #eee;
+                color: var(--text-color);
         }
 
         .styled-table th {
             text-align: left;
             padding: 15px 20px;
             font-weight: 600;
-            color: #555;
+            color: var(--text-color);
             font-size: 0.9rem;
         }
 
@@ -632,6 +631,8 @@
             padding: 15px 20px;
             border-bottom: 1px solid #f1f1f1;
             vertical-align: middle;
+                color: var(--text-color);
+
         }
 
     .book-info-cell {
@@ -653,7 +654,7 @@
 
     .book-title {
         font-weight: 600;
-        color: #333;
+        color: var(--text-color);
     }
 
     .category-tag {
@@ -728,6 +729,7 @@
         justify-content: space-between;
         align-items: center;
         border-top: 1px solid #eee;
+        background: var(--background);
     }
 
         .pagination span {
@@ -851,3 +853,11 @@
         }
     }
 </style>
+<script>
+    (function() {
+        var savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    })();
+</script>
