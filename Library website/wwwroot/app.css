@@ -62,7 +62,6 @@ h1:focus {
     --text-color: black;
     --danger: red;
     --warning: #f57c00;
-    --Mohamed-color: white;
 }
 
 [data-theme="dark"] {
@@ -80,6 +79,5 @@ h1:focus {
     --background: #1e1e1e;
     --danger: red;
     --warning: #f57c00;
-    --Mohamed-color: #333333;
 }
 
