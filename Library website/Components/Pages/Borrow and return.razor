@@ -504,7 +504,8 @@
         .input-group label {
             font-size: 0.85rem;
             font-weight: 600;
-            color: var(--text-main);
+            /* color: var(--text-main); */
+            color: var(--text-color);
         }
 
     .input-wrapper {
@@ -558,7 +559,14 @@
     }
 
     .btn-success {
-        background: var(--success);
+            color: #fff;
+            background-color: #157347;
+            border-color: #146c43;
+    }
+
+    .btn-success:hover {
+        background-color: #17ba48;
+        border-color: #146c43;
     }
 
     .full-width {
@@ -666,7 +674,7 @@
 
     .icon-btn {
         border: none;
-        background: transparent;
+        background: var(--Mohamed-color);
         color: #888;
         cursor: pointer;
         transition: 0.2s;

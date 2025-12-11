@@ -369,6 +369,77 @@
         await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", theme);
     }
 }
+@code {
+    private int BorrowedCount = 0;
+    private int AvailableCount = 0; // متغير جديد للمتاح
+    private int totalBookCount = 0;
+    private int totalMemberCount = 0;
+
+    // متغيرات لتحديد موقع الخطوط (النسبة المئوية)
+    private double BorrowedPosition = 50; // القيمة الافتراضية في المنتصف
+    private double AvailablePosition = 50;
+
+    // ... (باقي متغيرات البحث والمودال كما هي) ...
+    private List<Book> Books = new List<Book>();
+    private List<Member> Members = new List<Member>();
+    private Book newBook = new Book();
+    private bool ShowModal = false;
+    private string searchTerm = "";
+    private bool isDarkMode = false;
+    private bool _isInitialized = false;
+
+    // ... (باقي تعريفات الفلترة OverdueModel كما هي) ...
+    private IEnumerable<Book> FilteredBooks => string.IsNullOrWhiteSpace(searchTerm) ? Books.Take(3) : Books.Where(b => (b.Title?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) || (b.Author?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)).Take(3);
+    private IEnumerable<Member> FilteredMembers => string.IsNullOrWhiteSpace(searchTerm) ? Enumerable.Empty<Member>() : Members.Where(m => (m.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) || m.Id.ToString().Contains(searchTerm)).Take(3);
+    public class OverdueModel { public string BookTitle { get; set; } = ""; }
+    List<OverdueModel> OverdueList = new List<OverdueModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 1. جلب البيانات
+        BorrowedCount = await BookService.GetCountBorrowingAsync(true);
+        totalBookCount = await BookService.GetTotalBooksAsync();
+        totalMemberCount = await MemberService.GetTotalMembersAsync();
+
+        // 2. حساب الكتب المتاحة
+        AvailableCount = totalBookCount - BorrowedCount;
+
+        // 3. تحديث الرسم البياني
+        UpdateChartPositions();
+
+        var loadedBooks = await BookService.GetBooksAsync();
+        if (loadedBooks != null) Books = loadedBooks.OrderByDescending(b => b.Id).ToList();
+
+        var loadedMembers = await MemberService.GetMembersAsync();
+        if (loadedMembers != null) Members = loadedMembers;
+
+        await CalculateOverdueData();
+    }
+
+    private void UpdateChartPositions()
+    {
+        if (totalBookCount > 0)
+        {
+            // حساب النسبة المئوية (مثلاً: 20 كتاب مستعار من 100 = 20%)
+            double borrowedPercent = ((double)BorrowedCount / totalBookCount) * 100;
+            double availablePercent = ((double)AvailableCount / totalBookCount) * 100;
+
+            // تحويل النسبة لموقع CSS (Top)
+            // في CSS: 0% هو الأعلى، 100% هو الأسفل.
+            // لذا إذا كانت النسبة 80% (عالية)، نريد الـ Top يكون 20% فقط.
+            BorrowedPosition = 100 - borrowedPercent;
+            AvailablePosition = 100 - availablePercent;
+        }
+    }
+
+    // ... (باقي الدوال كما هي: OpenModal, SaveBook, ToggleDarkMode, etc) ...
+    private async Task CalculateOverdueData() { /* ... */ }
+    private void OpenModal() { newBook = new Book(); ShowModal = true; }
+    private void CloseModal() { ShowModal = false; }
+    private async Task SaveBook() { /* ... */ }
+    protected override async Task OnAfterRenderAsync(bool firstRender) { /* ... */ }
+    private async Task ToggleDarkMode() { /* ... */ }
+}
 
 <style>
     /* CSS UNCHANGED - Same as your provided CSS */
@@ -487,7 +558,7 @@
         align-items: center;
         gap: 8px;
         background-color: var(--primary);
-        color: white;
+        color: var(--text-color);
     }
 
     .btn-primary {
@@ -715,7 +786,7 @@
     }
 
     .modal-box {
-        background: white;
+        background: var(--Mohamed-color);
         width: 450px;
         border-radius: 12px;
         overflow: hidden;
@@ -727,12 +798,12 @@
         border-bottom: 1px solid #eee;
         display: flex;
         justify-content: space-between;
-        background: #f8f9fa;
+        background: var(--Mohamed-color);
     }
 
         .modal-header h3 {
             margin: 0;
-            color: black;
+            color: var(--text-color);
         }
 
     .close-btn {
@@ -756,7 +827,7 @@
         margin-right: 6px;
         font-weight: 600;
         font-size: 0.9rem;
-        color: black;
+        color: var(--text-color);
     }
 
     .form-control {
@@ -815,10 +886,12 @@
             border: none;
             outline: none;
             width: 100%;
+            background: white;
+            color: black;
         }
 
     .icon-btn {
-        background: white;
+        background: var(--Mohamed-color);
         border: 1px solid #ddd;
         width: 40px;
         height: 40px;
@@ -920,7 +993,6 @@
 
     .btn-outline {
         background: var(--primary);
-        border: 1px solid #ddd;
         color: white;
     }
 
@@ -993,6 +1065,8 @@
         height: 3px;
         border-radius: 2px;
         transform: rotate(-5deg);
+        /* إضافة حركة ناعمة عند تغيير الموقع */
+        transition: top 1s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .blue-line {
