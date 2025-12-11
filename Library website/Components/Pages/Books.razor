@@ -614,9 +614,9 @@
     }
 
         .styled-table thead {
-            background: var(--background);
+            background: var(--border-color);
             border-bottom: 1px solid #eee;
-                color: var(--text-color);
+            color: var(--text-color);
         }
 
         .styled-table th {
@@ -794,6 +794,7 @@
 
         .modal-header h3 {
             margin: 0;
+			color: black;
         }
 
     .close-btn {
@@ -817,6 +818,7 @@
         margin-right: 6px;
         font-weight: 600;
         font-size: 0.9rem;
+		color: black;
     }
 
     .form-control {
@@ -839,6 +841,15 @@
         display: flex;
         justify-content: flex-end;
         gap: 10px;
+    }
+
+    .icon-btn {
+        background: white;
+        border: 1px solid #ddd;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
     }
 
     @@keyframes slideDown {

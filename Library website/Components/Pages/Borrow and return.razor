@@ -272,22 +272,35 @@
         Message = msg;
         IsError = isError;
     }
-        // متغير للتحكم في الوضع
     private bool isDarkMode = false;
+
+    // هذه الدالة تعمل عند فتح الصفحة
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // نسأل المتصفح: ما هو الوضع المحفوظ؟
+            var theme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "theme");
+
+            // إذا كان محفوظاً كـ dark، نحدث المتغير ليصبح الزر صحيحاً
+            if (theme == "dark")
+            {
+                isDarkMode = true;
+                StateHasChanged(); // تحديث الأيقونة من شمس لقمر
+            }
+        }
+    }
 
     private async Task ToggleDarkMode()
     {
         isDarkMode = !isDarkMode;
-        
-        // نرسل الأمر للجافاسكريبت لتغيير الـ data-theme في الـ HTML
-        if (isDarkMode)
-        {
-            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "dark");
-        }
-        else
-        {
-            await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "light");
-        }
+        var theme = isDarkMode ? "dark" : "light";
+
+        // تغيير الـ HTML
+        await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", theme);
+
+        // حفظ الاختيار في الذاكرة
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", theme);
     }
 
 }
@@ -443,7 +456,7 @@
         flex: 1;
         padding: 15px;
         border: none;
-        background: #53595e;
+        background: #a2a6a9;
         cursor: pointer;
         font-weight: 600;
         color: var(--text-reverse);
@@ -457,7 +470,7 @@
     }
 
         .tab-btn:hover {
-            background: black;
+            background: #838383;
             color: var(--text-color);
         }
 
@@ -663,6 +676,14 @@
             color: var(--primary);
             transform: scale(1.1);
         }
+    .icon-btn {
+        background: white;
+        border: 1px solid #ddd;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
 </style>
 <script>
     (function() {

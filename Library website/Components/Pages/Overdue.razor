@@ -336,7 +336,14 @@
         grid-template-columns: 260px 1fr;
         min-height: 100vh;
     }
-
+    :root {
+        --danger: red;
+        --warning: #f57c00;
+    }
+    [data-theme="dark"] {
+        --danger: red;
+        --warning: #f57c00;
+    }
     /* Sidebar (Standard) */
     .sidebar {
         background: var(--sidebar-bg);
@@ -701,6 +708,15 @@
         .action-btn:hover {
             transform: scale(1.1);
         }
+
+    .icon-btn {
+        background: white;
+        border: 1px solid #ddd;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
 </style>
 <script>
     (function() {
