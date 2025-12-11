@@ -15,6 +15,11 @@
             <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
         </div>
 
+        <div class="search-box-sidebar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Search catalog..." @bind="searchTerm" @bind:event="oninput" />
+        </div>
+
         <nav class="sidebar-nav">
             <p class="nav-label">Navigation</p>
             <a href="#" class="nav-item active"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
@@ -25,7 +30,6 @@
             <a href="/overdue" class="nav-item alert-link">
                 <i class="fa-solid fa-circle-exclamation"></i> Overdues
             </a>
-            @* --- تم إزالة زر الوضع الليلي من هنا --- *@
         </nav>
     </aside>
 
@@ -36,7 +40,6 @@
                 <span>Home > Dashboard</span>
             </div>
             <div class="user-actions">
-                @* --- تم إضافة زر الوضع الليلي هنا --- *@
                 <button class="icon-btn" @onclick="ToggleDarkMode" title="Toggle Dark Mode">
                     @if (isDarkMode)
                     {
@@ -52,7 +55,7 @@
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" placeholder="Search books, members..." @bind="searchTerm" @bind:event="oninput" />
                 </div>
-
+                <button class="icon-btn"><i class="fa-regular fa-bell"></i></button>
                 <div class="user-profile">
                     <img src="https://ui-avatars.com/api/?name=Al+Rafi&background=0D8ABC&color=fff" alt="User" />
                     <div class="user-info">
@@ -64,7 +67,7 @@
         </header>
 
         <div class="content-grid">
-            @* ... بقية محتوى الصفحة كما هو ... *@
+
             <div class="stats-row">
                 <div class="stat-card">
                     <div class="stat-header">Total Books <i class="fa-solid fa-book"></i></div>
@@ -76,9 +79,8 @@
                     <div class="stat-value">@BorrowedCount</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-header">Overdue Books <i class="fa-regular fa-clock"></i></div>
-                    <div class="stat-value">@OverdueList.Count</div>
-                    <div class="stat-badge orange">Action needed</div>
+                    <div class="stat-header">Available Books <i class="fa-solid fa-check-circle"></i></div>
+                    <div class="stat-value">@(totalBookCount - BorrowedCount)</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">Total Members <i class="fa-solid fa-users"></i></div>
@@ -100,27 +102,20 @@
             <div class="charts-row">
                 <div class="card chart-card">
                     <div class="card-header">
-                        <h3>Borrowed vs. Available</h3> <div class="legend">
+                        <h3>Weekly Activity</h3>
+                        <div class="legend">
                             <span class="dot blue"></span> Borrowed
                             <span class="dot orange"></span> Available
                         </div>
                     </div>
-                    <div class="chart-placeholder line-chart-mockup">
-                        <div class="line-mock blue-line"></div>
-                        <div class="line-mock orange-line"></div>
-                        <div class="months">
-                            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
-                        </div>
+                    <div class="chart-container" style="height: 200px; width: 100%;">
+                        <canvas id="borrowChart"></canvas>
                     </div>
                 </div>
 
                 <div class="card chart-card">
                     <div class="card-header">
                         <h3>Books per Category</h3>
-                        <div class="legend-tags">
-                            <span class="tag">Fiction</span>
-                            <span class="tag">Academic</span>
-                        </div>
                     </div>
                     <div class="chart-placeholder bar-chart-mockup">
                         <div class="bar" style="height: 60%; background: #007bff;"></div>
@@ -138,49 +133,40 @@
             <div class="lists-row">
                 <div class="card">
                     <div class="card-header">
-                        @if (string.IsNullOrWhiteSpace(searchTerm))
-                        {
-                            <h3><i class="fa-regular fa-star"></i> Most Borrowed Books</h3>
-                            <span class="sub-text">Top 5 by count</span>
-                        }
-                        else
-                        {
-                            <h3><i class="fa-solid fa-users"></i> Member Results</h3>
-                            <span class="sub-text">Matches found: @FilteredMembers.Count()</span>
-                        }
+                        <h3><i class="fa-regular fa-star"></i> Currently Borrowed Books</h3>
+     
                     </div>
-
-                    @if (!string.IsNullOrWhiteSpace(searchTerm))
-                    {
-                        <div class="recently-added-section">
-                            <div class="books-grid">
-                                @foreach (var member in FilteredMembers)
+                    <div class="recently-added-section">
+                        <div class="books-grid">
+                            @if (MostBorrowedBooks.Any())
+                            {
+                                @foreach (var book in MostBorrowedBooks)
                                 {
                                     <div class="list-item">
-                                        <h4 class="title">@member.Name</h4>
-                                        <p class="date">ID: @member.Id | @member.MobileNumber</p>
+                                        <div style="background:#eef2ff; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#007bff; font-weight:bold;">
+                                            #@(MostBorrowedBooks.IndexOf(book) + 1)
+                                        </div>
+                                        <div>
+                                            <h4 class="title" style="margin:0;">@book.Title</h4>
+                                            <p class="date" style="margin:0;">By @book.Author</p>
+                                        </div>
                                     </div>
                                 }
-                                @if (!FilteredMembers.Any())
-                                {
-                                    <p style="padding: 10px; color: #888;">No members found.</p>
-                                }
-                            </div>
+                            }
+                            else
+                            {
+                                <p style="padding:15px; color:#888;">No active loans to display.</p>
+                            }
                         </div>
-                    }
+                    </div>
                 </div>
 
                 <div class="card">
                     <div class="card-header">
-                        @if (string.IsNullOrWhiteSpace(searchTerm))
+                        <h3>Recently Added Books</h3>
+                        @if (!string.IsNullOrWhiteSpace(searchTerm))
                         {
-                            <h3>Recently Added Books</h3>
-                            <span class="sub-text">Latest 3</span>
-                        }
-                        else
-                        {
-                            <h3><i class="fa-solid fa-book"></i> Book Results</h3>
-                            <span class="sub-text">Matches found: @FilteredBooks.Count()</span>
+                            <span style="font-size:0.8rem; color:#007bff; margin-left:10px;">(Filtering results...)</span>
                         }
                     </div>
                     <div class="recently-added-section">
@@ -192,14 +178,15 @@
                                     <p>ID: @book.Id | By: @book.Author</p>
                                 </div>
                             }
-                            @if (!FilteredBooks.Any())
+                            @if (!FilteredBooks.Any() && Books.Any())
                             {
-                                <p style="padding: 10px; color: #888;">No books match your search.</p>
+                                <div style="padding:15px; color:#888;">No books match your search.</div>
                             }
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
     </main>
 </div>
@@ -247,7 +234,9 @@
 
 @code {
     private int BorrowedCount = 0;
+    private int AvailableCount = 0;
     private List<Book> Books = new List<Book>();
+    private List<Book> MostBorrowedBooks = new List<Book>();
     private List<Member> Members = new List<Member>();
     private Book newBook = new Book();
     private bool ShowModal = false;
@@ -255,7 +244,10 @@
     private int totalMemberCount = 0;
     private string searchTerm = "";
 
-    // 1. متغير للتحكم في الوضع
+    // Arrays for the chart
+    private int[] weeklyBorrowedData = new int[7];
+    private int[] weeklyAvailableData = new int[7];
+
     private bool isDarkMode = false;
     private bool _isInitialized = false;
 
@@ -264,21 +256,11 @@
         get
         {
             if (string.IsNullOrWhiteSpace(searchTerm)) return Books.Take(3);
-            return Books.Where(b => (b.Title != null && b.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                                    (b.Author != null && b.Author.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                                    b.Id.ToString().Contains(searchTerm)).Take(3);
-        }
-    }
-
-    private IEnumerable<Member> FilteredMembers
-    {
-        get
-        {
-            if (string.IsNullOrWhiteSpace(searchTerm)) return Enumerable.Empty<Member>();
-            return Members.Where(m => (m.Name != null && m.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                                      (m.MobileNumber != null && m.MobileNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                                      (m.Email != null && m.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                                      m.Id.ToString().Contains(searchTerm)).Take(3);
+            return Books
+                .Where(b => (b.Title != null && b.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                            (b.Author != null && b.Author.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                            b.Id.ToString().Contains(searchTerm))
+                .Take(3);
         }
     }
 
@@ -289,32 +271,39 @@
     {
         BorrowedCount = await BookService.GetCountBorrowingAsync(true);
         totalBookCount = await BookService.GetTotalBooksAsync();
+        AvailableCount = totalBookCount - BorrowedCount;
         totalMemberCount = await MemberService.GetTotalMembersAsync();
 
         var loadedBooks = await BookService.GetBooksAsync();
-        if (loadedBooks != null) Books = loadedBooks.OrderByDescending(b => b.Id).ToList();
+        if (loadedBooks != null)
+        {
+            Books = loadedBooks.OrderByDescending(b => b.Id).ToList();
+            MostBorrowedBooks = loadedBooks.Where(b => b.IsBorrowed).Take(5).ToList();
+        }
 
-        var loadedMembers = await MemberService.GetMembersAsync();
-        if (loadedMembers != null) Members = loadedMembers;
+        // Get Real History Data
+        var history = await BookService.GetWeeklyStatsAsync();
+        weeklyBorrowedData = history.borrowedHistory;
+        weeklyAvailableData = history.availableHistory;
 
         await CalculateOverdueData();
     }
 
-    // 2. دالة تشغيل عند الرندر الأول لاسترجاع الثيم المحفوظ
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_isInitialized)
+        if (firstRender)
         {
             _isInitialized = true;
-            // التحقق من الـ LocalStorage إذا كان هناك ثيم محفوظ
             var theme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "theme");
             if (theme == "dark")
             {
                 isDarkMode = true;
-                // تطبيق الثيم فوراً
                 await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", "dark");
-                StateHasChanged(); // تحديث الأيقونة
+                StateHasChanged();
             }
+
+            // Pass Arrays to JS instead of simple ints
+            await JSRuntime.InvokeVoidAsync("renderRealWeeklyChart", weeklyBorrowedData, weeklyAvailableData);
         }
     }
 
@@ -336,49 +325,112 @@
 
     private async Task SaveBook()
     {
-        if (string.IsNullOrWhiteSpace(newBook.Title) || string.IsNullOrWhiteSpace(newBook.Author))
-        {
-            await JSRuntime.InvokeVoidAsync("alert", "Please enter a Title and Author.");
-            return;
-        }
-
+        if (string.IsNullOrWhiteSpace(newBook.Title) || string.IsNullOrWhiteSpace(newBook.Author)) { CloseModal(); return; }
         try
         {
             await BookService.AddBookAsync(newBook);
             Books.Insert(0, newBook);
             totalBookCount++;
+            AvailableCount++;
             newBook = new Book();
+
+            // Refresh chart
+            var history = await BookService.GetWeeklyStatsAsync();
+            await JSRuntime.InvokeVoidAsync("renderRealWeeklyChart", history.borrowedHistory, history.availableHistory);
             CloseModal();
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", "Error saving book: " + ex.Message);
+            await JSRuntime.InvokeVoidAsync("alert", "Error: " + ex.Message);
         }
     }
 
-    // 3. دالة تبديل الوضع المعدلة (تحفظ في LocalStorage)
     private async Task ToggleDarkMode()
     {
         isDarkMode = !isDarkMode;
         var theme = isDarkMode ? "dark" : "light";
-
-        // تغيير الثيم
         await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", theme);
-
-        // حفظ الثيم في المتصفح
         await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", theme);
     }
 }
 
-<style>
-    /* CSS UNCHANGED - Same as your provided CSS */
+<script>
+    // --- UPDATED JS TO ACCEPT ARRAYS ---
+    window.renderRealWeeklyChart = (borrowedArray, availableArray) => {
+        const ctx = document.getElementById('borrowChart');
+        if (!ctx) return;
 
-    /* ... (All your existing CSS remains exactly here) ... */
+        if (window.myLibraryChart) {
+            window.myLibraryChart.destroy();
+        }
+
+        // Generate Labels: Last 7 Days
+        const labels = [];
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const today = new Date();
+
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(today.getDate() - i);
+            if (i === 0) labels.push("Today");
+            else labels.push(days[d.getDay()]);
+        }
+
+        window.myLibraryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Borrowed Books',
+                        data: borrowedArray, // Using real array passed from C#
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#007bff',
+                        pointRadius: 4
+                    },
+                    {
+                        label: 'Available Books',
+                        data: availableArray, // Using real array passed from C#
+                        borderColor: '#fd7e14',
+                        backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#fd7e14',
+                        pointRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f0f0f0' },
+                        suggestedMax: Math.max(...borrowedArray, ...availableArray) + 2
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    };
+</script>
+<style>
+
 
     * {
         box-sizing: border-box;
         font-family: 'Segoe UI', sans-serif;
     }
+
+
 
     body {
         margin: 0;
@@ -386,11 +438,15 @@
         color: var(--text-color);
     }
 
+
+
     .dashboard-container {
         display: grid;
         grid-template-columns: 250px 1fr;
         min-height: 100vh;
     }
+
+
 
     .sidebar {
         background: var(--sidebar-bg);
@@ -401,11 +457,15 @@
         gap: 20px;
     }
 
+
+
     .sidebar-header h3 {
         margin: 0;
         color: #088af5;
         font-size: 1.2rem;
     }
+
+
 
     .search-box-sidebar {
         background: #f8f9fa;
@@ -417,12 +477,16 @@
         color: var(--text-light);
     }
 
+
+
         .search-box-sidebar input {
             border: none;
             background: transparent;
             outline: none;
             width: 100%;
         }
+
+
 
     .nav-label {
         font-size: 0.8rem;
@@ -431,6 +495,8 @@
         margin-top: 15px;
         font-weight: 600;
     }
+
+
 
     .nav-item {
         display: flex;
@@ -444,20 +510,28 @@
         margin-bottom: 5px;
     }
 
+
+
         .nav-item:hover {
             background: #eef2ff;
             color: var(--primary);
         }
+
+
 
         .nav-item.active {
             background: var(--primary);
             color: white;
         }
 
+
+
     .main-content {
         padding: 20px 30px;
         overflow-y: auto;
     }
+
+
 
     .top-bar {
         display: flex;
@@ -466,16 +540,22 @@
         margin-bottom: 25px;
     }
 
+
+
     .breadcrumbs h2 {
         margin: 0;
         font-size: 1.4rem;
         color: var(--text-color);
     }
 
+
+
     .breadcrumbs span {
         color: #888;
         font-size: 0.9rem;
     }
+
+
 
     .btn {
         padding: 10px 20px;
@@ -490,10 +570,14 @@
         color: white;
     }
 
+
+
     .btn-primary {
         background: var(--primary);
         color: white;
     }
+
+
 
     .filter-bar {
         display: flex;
@@ -505,6 +589,8 @@
         border-radius: var(--border-radius);
         box-shadow: var(--shadow);
     }
+
+
 
     .search-wrapper {
         display: flex;
@@ -518,6 +604,8 @@
         color: #888;
     }
 
+
+
         .search-wrapper input {
             border: none;
             background: transparent;
@@ -525,10 +613,14 @@
             width: 100%;
         }
 
+
+
     .filter-actions {
         display: flex;
         gap: 15px;
     }
+
+
 
     .form-select {
         padding: 8px 12px;
@@ -540,25 +632,35 @@
         background: white;
     }
 
+
+
     .card {
         background: var(--background);
         border-radius: var(--border-radius);
         box-shadow: var(--shadow);
     }
 
+
+
     .table-card {
         overflow: hidden;
     }
+
+
 
     .styled-table {
         width: 100%;
         border-collapse: collapse;
     }
 
+
+
         .styled-table thead {
             background-color: #f8f9fa;
             border-bottom: 1px solid #eee;
         }
+
+
 
         .styled-table th {
             text-align: left;
@@ -568,17 +670,23 @@
             font-size: 0.9rem;
         }
 
+
+
         .styled-table td {
             padding: 15px 20px;
             border-bottom: 1px solid #f1f1f1;
             vertical-align: middle;
         }
 
+
+
     .book-info-cell {
         display: flex;
         align-items: center;
         gap: 12px;
     }
+
+
 
     .book-icon {
         width: 35px;
@@ -591,10 +699,14 @@
         justify-content: center;
     }
 
+
+
     .book-title {
         font-weight: 600;
         color: #333;
     }
+
+
 
     .category-tag {
         background: #f0f0f0;
@@ -604,10 +716,14 @@
         color: #666;
     }
 
+
+
     .isbn {
         font-family: monospace;
         color: #777;
     }
+
+
 
     .status-badge {
         padding: 5px 10px;
@@ -616,24 +732,34 @@
         font-weight: 600;
     }
 
+
+
         .status-badge.green {
             background: #d4edda;
             color: #155724;
         }
+
+
 
         .status-badge.orange {
             background: #fff3cd;
             color: #856404;
         }
 
+
+
         .status-badge.red {
             background: rgb(255 0 0 / 22%);
             color: red;
         }
 
+
+
     .actions-cell {
         text-align: center;
     }
+
+
 
     .action-btn {
         width: 32px;
@@ -648,19 +774,27 @@
         justify-content: center;
     }
 
+
+
         .action-btn.edit {
             background: #eef2ff;
             color: var(--primary);
         }
+
+
 
         .action-btn.delete {
             background: #fff0f0;
             color: #dc3545;
         }
 
+
+
         .action-btn:hover {
             transform: scale(1.1);
         }
+
+
 
     .pagination {
         padding: 15px 20px;
@@ -670,15 +804,21 @@
         border-top: 1px solid #eee;
     }
 
+
+
         .pagination span {
             color: #888;
             font-size: 0.9rem;
         }
 
+
+
     .page-buttons {
         display: flex;
         gap: 5px;
     }
+
+
 
         .page-buttons button {
             width: 30px;
@@ -690,15 +830,21 @@
             color: #555;
         }
 
+
+
             .page-buttons button.active {
                 background: var(--primary);
                 color: white;
                 border-color: var(--primary);
             }
 
+
+
             .page-buttons button:hover:not(.active):not(:disabled) {
                 background: #f0f0f0;
             }
+
+
 
     .modal-overlay {
         position: fixed;
@@ -714,6 +860,8 @@
         backdrop-filter: blur(4px);
     }
 
+
+
     .modal-box {
         background: white;
         width: 450px;
@@ -721,6 +869,8 @@
         overflow: hidden;
         animation: slideDown 0.3s ease-out;
     }
+
+
 
     .modal-header {
         padding: 15px 20px;
@@ -730,10 +880,14 @@
         background: #f8f9fa;
     }
 
+
+
         .modal-header h3 {
             margin: 0;
             color: black;
         }
+
+
 
     .close-btn {
         background: none;
@@ -743,12 +897,16 @@
         color: #888;
     }
 
+
+
     .modal-body {
         padding: 20px;
         display: flex;
         flex-direction: column;
         gap: 15px;
     }
+
+
 
     .input-group label {
         display: block;
@@ -759,6 +917,8 @@
         color: black;
     }
 
+
+
     .form-control {
         width: 100%;
         padding: 10px;
@@ -767,11 +927,15 @@
         outline: none;
     }
 
+
+
     .row-2 {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 15px;
     }
+
+
 
     .modal-footer {
         padding: 15px 20px;
@@ -781,11 +945,16 @@
         gap: 10px;
     }
 
+
+
     @@keyframes slideDown {
+
         from {
             transform: translateY(-20px);
             opacity: 0;
         }
+
+
 
         to {
             transform: translateY(0);
@@ -793,11 +962,15 @@
         }
     }
 
+
+
     .user-actions {
         display: flex;
         align-items: center;
         gap: 20px;
     }
+
+
 
     .search-top {
         background: white;
@@ -811,11 +984,15 @@
         color: black;
     }
 
+
+
         .search-top input {
             border: none;
             outline: none;
             width: 100%;
         }
+
+
 
     .icon-btn {
         background: white;
@@ -826,11 +1003,15 @@
         cursor: pointer;
     }
 
+
+
     .user-profile {
         display: flex;
         align-items: center;
         gap: 10px;
     }
+
+
 
         .user-profile img {
             width: 40px;
@@ -838,20 +1019,28 @@
             border-radius: 50%;
         }
 
+
+
     .user-info {
         display: flex;
         flex-direction: column;
     }
+
+
 
         .user-info .name {
             font-weight: bold;
             font-size: 0.9rem;
         }
 
+
+
         .user-info .role {
             font-size: 0.8rem;
             color: var(--text-light);
         }
+
+
 
     .content-grid {
         display: flex;
@@ -859,11 +1048,15 @@
         gap: 20px;
     }
 
+
+
     .stats-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr) auto;
         gap: 20px;
     }
+
+
 
     .stat-card {
         background: white;
@@ -874,6 +1067,8 @@
         background-color: var(--background);
     }
 
+
+
     .stat-header {
         font-size: 0.85rem;
         color: var(--text-color);
@@ -882,6 +1077,8 @@
         margin-bottom: 10px;
     }
 
+
+
     .stat-value {
         font-size: 1.5rem;
         font-weight: bold;
@@ -889,10 +1086,14 @@
         color: var(--text-color);
     }
 
+
+
     .stat-sub {
         font-size: 0.8rem;
         color: #aaa;
     }
+
+
 
     .stat-badge {
         font-size: 0.75rem;
@@ -901,15 +1102,21 @@
         display: inline-block;
     }
 
+
+
     .green {
         background: #d4edda;
         color: #155724;
     }
 
+
+
     .orange {
         background: #fff3cd;
         color: #856404;
     }
+
+
 
     .action-buttons {
         display: flex;
@@ -918,11 +1125,15 @@
         justify-content: center;
     }
 
+
+
     .btn-outline {
         background: var(--primary);
         border: 1px solid #ddd;
         color: white;
     }
+
+
 
     .alert-banner {
         background: #ff8800;
@@ -934,11 +1145,15 @@
         gap: 15px;
     }
 
+
+
     .charts-row {
         display: grid;
         grid-template-columns: 2fr 1fr;
         gap: 20px;
     }
+
+
 
     .card-header {
         display: flex;
@@ -947,10 +1162,14 @@
         margin-bottom: 20px;
     }
 
+
+
         .card-header h3 {
             margin: 0;
             font-size: 1rem;
         }
+
+
 
     .chart-placeholder {
         height: 150px;
@@ -960,10 +1179,14 @@
         justify-content: space-around;
     }
 
+
+
     .line-chart-mockup {
         border-bottom: 1px solid #eee;
         border-left: 1px solid #eee;
     }
+
+
 
     .dot {
         height: 10px;
@@ -974,17 +1197,25 @@
         margin-left: 10px;
     }
 
+
+
         .dot.blue {
             background-color: #007bff;
         }
+
+
 
         .dot.green {
             background-color: #28a745;
         }
 
+
+
         .dot.orange {
             background-color: #fd7e14;
         }
+
+
 
     .line-mock {
         position: absolute;
@@ -995,11 +1226,15 @@
         transform: rotate(-5deg);
     }
 
+
+
     .blue-line {
         top: 45%;
         background: #007bff;
         box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2);
     }
+
+
 
     .orange-line {
         top: 60%;
@@ -1007,15 +1242,21 @@
         box-shadow: 0 4px 10px rgba(253, 126, 20, 0.2);
     }
 
+
+
     .bar {
         width: 30px;
         border-radius: 4px 4px 0 0;
     }
 
+
+
     .months span {
         font-size: 0.7rem;
         color: #aaa;
     }
+
+
 
     .bar-labels {
         display: flex;
@@ -1023,11 +1264,15 @@
         margin-top: 5px;
     }
 
+
+
     .lists-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 20px;
     }
+
+
 
     .list-item {
         display: flex;
@@ -1038,17 +1283,23 @@
         padding: 12px;
     }
 
+
+
     .rank {
         font-weight: bold;
         color: #ccc;
         width: 20px;
     }
 
+
+
     .list-item .title {
         flex-grow: 1;
         font-weight: 600;
         font-size: 1rem;
     }
+
+
 
     .book-cover {
         width: 35px;
@@ -1057,16 +1308,27 @@
         object-fit: cover;
     }
 
+
+
     .list-item .date {
         font-size: 0.8rem;
         color: #aaa;
     }
+
 </style>
+
 <script>
+
     (function() {
+
         var savedTheme = localStorage.getItem('theme');
+
         if (savedTheme === 'dark') {
+
             document.documentElement.setAttribute('data-theme', 'dark');
+
         }
+
     })();
+
 </script>

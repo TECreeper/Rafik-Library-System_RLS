@@ -38,6 +38,48 @@ private readonly LibraryDbContext _context;
                 _context.Books.Remove(book);
                 await _context.SaveChangesAsync();
             }
+        }// In BookService.cs
+
+        public async Task<(int[] borrowedHistory, int[] availableHistory)> GetWeeklyStatsAsync()
+        {
+            var books = await _context.Books.ToListAsync();
+            int totalBooks = books.Count;
+
+            // 1. Get the exact count RIGHT NOW
+            int currentBorrowed = books.Count(b => b.IsBorrowed);
+
+            var borrowedHistory = new int[7]; // Array for 7 days
+            var availableHistory = new int[7];
+
+            // 2. We start from Today and calculate backwards
+            var today = DateTime.Now.Date;
+            int tempBorrowed = currentBorrowed; // This variable will travel back in time
+
+            // Loop from Index 6 (Today) down to 0 (6 days ago)
+            for (int i = 6; i >= 0; i--)
+            {
+                // Save the state for this day
+                borrowedHistory[i] = tempBorrowed;
+                availableHistory[i] = totalBooks - tempBorrowed;
+
+                // Calculate the state for the *day before*
+                // Date corresponding to the current index
+                var dateAtIndex = today.AddDays(-(6 - i));
+
+                // How many actions happened on this specific date?
+                int borrowedOnDate = books.Count(b => b.BorrowDate.HasValue && b.BorrowDate.Value.Date == dateAtIndex);
+                int returnedOnDate = books.Count(b => b.ReturnDate.HasValue && b.ReturnDate.Value.Date == dateAtIndex);
+
+                // REVERSE THE LOGIC to go back in time:
+                // If it was borrowed today, it wasn't borrowed yesterday (Subtract)
+                // If it was returned today, it WAS borrowed yesterday (Add)
+                tempBorrowed = tempBorrowed - borrowedOnDate + returnedOnDate;
+
+                // Safety: Count can't be below 0
+                if (tempBorrowed < 0) tempBorrowed = 0;
+            }
+
+            return (borrowedHistory, availableHistory);
         }
 
         public async Task<int> GetCountBorrowingAsync(bool Borrowing)
