@@ -15,7 +15,7 @@
             <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
         </div>
 
-
+        
 
         <nav class="sidebar-nav">
             <p class="nav-label">Navigation</p>
@@ -90,13 +90,11 @@
                     </button>
                 </div>
             </div>
-            @if (OverdueList.Count >= 5)
-            {
-                <div class="alert-banner">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                <span><strong>Overdue spike:</strong> @OverdueList.Count books overdue Consider sending reminders.</span>
+
+            <div class="alert-banner">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span><strong>Overdue spike:</strong> @OverdueList.Count books overdue for 14+ days. Consider sending reminders.</span>
             </div>
-            }
 
             <div class="charts-row">
                 <div class="card chart-card">
@@ -130,43 +128,78 @@
             </div>
 
             <div class="lists-row">
+
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="fa-regular fa-star"></i> Currently Borrowed Books</h3>
-     
+                        @if (string.IsNullOrWhiteSpace(searchTerm))
+                        {
+                            <h3><i class="fa-regular fa-star"></i> Currently Borrowed Books</h3>
+                            <span class="sub-text">Currently Active Loans</span>
+                        }
+                        else
+                        {
+                            <h3><i class="fa-solid fa-users"></i> Member Results</h3>
+                            <span class="sub-text">Matches found: @FilteredMembers.Count()</span>
+                        }
                     </div>
-                    
+
                     <div class="recently-added-section">
                         <div class="books-grid">
-                                @if (CurrentlyBorrowedBooks.Any())
+
+                            @if (string.IsNullOrWhiteSpace(searchTerm))
                             {
-                                    @foreach (var book in CurrentlyBorrowedBooks)
+                                @if (MostBorrowedBooks.Any())
                                 {
-                                    <div class="list-item">
-                                        <div style="background:#eef2ff; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#007bff; font-weight:bold;">
-                                                #@(CurrentlyBorrowedBooks.IndexOf(book) + 1)
+                                    @foreach (var book in MostBorrowedBooks)
+                                    {
+                                        <div class="list-item">
+                                            <div style="background:#eef2ff; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#007bff; font-weight:bold;">
+                                                #@(MostBorrowedBooks.IndexOf(book) + 1)
+                                            </div>
+                                            <div>
+                                                <h4 class="title" style="margin:0;">@book.Title</h4>
+                                                <p class="date" style="margin:0;">By @book.Author</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 class="title" style="margin:0;">@book.Title</h4>
-                                            <p class="date" style="margin:0;">By @book.Author</p>
-                                        </div>
-                                    </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <p style="padding:15px; color:#888;">No active loans to display.</p>
                                 }
                             }
                             else
                             {
-                                <p style="padding:15px; color:#888;">No active loans to display.</p>
+                                @foreach (var member in FilteredMembers)
+                                {
+                                    <div class="list-item">
+                                        <div>
+                                            <h4 class="title" style="margin:0;">@member.Name</h4>
+                                            <p class="date" style="margin:0;">ID: @member.Id | @member.MobileNumber</p>
+                                        </div>
+                                    </div>
+                                }
+                                @if (!FilteredMembers.Any())
+                                {
+                                    <p style="padding:15px; color:#888;">No members found.</p>
+                                }
                             }
+
                         </div>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-header">
-                        <h3>Recently Added Books</h3>
-                        @if (!string.IsNullOrWhiteSpace(searchTerm))
+                        @if (string.IsNullOrWhiteSpace(searchTerm))
                         {
-                            <span style="font-size:0.8rem; color:#007bff; margin-left:10px;">(Filtering results...)</span>
+                            <h3>Recently Added Books</h3>
+                            <span class="sub-text">Latest 3</span>
+                        }
+                        else
+                        {
+                            <h3><i class="fa-solid fa-book"></i> Book Results</h3>
+                            <span class="sub-text">Matches found: @FilteredBooks.Count()</span>
                         }
                     </div>
                     <div class="recently-added-section">
@@ -236,21 +269,21 @@
     private int BorrowedCount = 0;
     private int AvailableCount = 0;
     private List<Book> Books = new List<Book>();
-    private List<Book> CurrentlyBorrowedBooks = new List<Book>();
+    private List<Book> MostBorrowedBooks = new List<Book>();
     private List<Member> Members = new List<Member>();
     private Book newBook = new Book();
     private bool ShowModal = false;
     private int totalBookCount = 0;
     private int totalMemberCount = 0;
     private string searchTerm = "";
-    
-    // Arrays for the chart
+
     private int[] weeklyBorrowedData = new int[7];
     private int[] weeklyAvailableData = new int[7];
 
     private bool isDarkMode = false;
     private bool _isInitialized = false;
 
+    // Filter Logic for Books
     private IEnumerable<Book> FilteredBooks
     {
         get
@@ -260,6 +293,21 @@
                 .Where(b => (b.Title != null && b.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
                             (b.Author != null && b.Author.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
                             b.Id.ToString().Contains(searchTerm))
+                .Take(3);
+        }
+    }
+
+    // Filter Logic for Members (ADDED BACK)
+    private IEnumerable<Member> FilteredMembers
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm)) return Enumerable.Empty<Member>();
+            return Members
+                .Where(m => (m.Name != null && m.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                            (m.MobileNumber != null && m.MobileNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                            (m.Email != null && m.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                            m.Id.ToString().Contains(searchTerm))
                 .Take(3);
         }
     }
@@ -278,10 +326,12 @@
         if (loadedBooks != null)
         {
             Books = loadedBooks.OrderByDescending(b => b.Id).ToList();
-            CurrentlyBorrowedBooks = loadedBooks.Where(b => b.IsBorrowed).Take(5).ToList();
+            MostBorrowedBooks = loadedBooks.Where(b => b.IsBorrowed).Take(5).ToList();
         }
 
-        // Get Real History Data
+        var loadedMembers = await MemberService.GetMembersAsync();
+        if (loadedMembers != null) Members = loadedMembers;
+
         var history = await BookService.GetWeeklyStatsAsync();
         weeklyBorrowedData = history.borrowedHistory;
         weeklyAvailableData = history.availableHistory;
@@ -302,7 +352,6 @@
                 StateHasChanged();
             }
 
-            // Pass Arrays to JS instead of simple ints
             await JSRuntime.InvokeVoidAsync("renderRealWeeklyChart", weeklyBorrowedData, weeklyAvailableData);
         }
     }
@@ -334,7 +383,6 @@
             AvailableCount++;
             newBook = new Book();
 
-            // Refresh chart
             var history = await BookService.GetWeeklyStatsAsync();
             await JSRuntime.InvokeVoidAsync("renderRealWeeklyChart", history.borrowedHistory, history.availableHistory);
             CloseModal();
@@ -355,7 +403,7 @@
 }
 
 <script>
-    // --- UPDATED JS TO ACCEPT ARRAYS ---
+    // JS Logic for Chart (Same as before)
     window.renderRealWeeklyChart = (borrowedArray, availableArray) => {
         const ctx = document.getElementById('borrowChart');
         if (!ctx) return;
@@ -364,7 +412,6 @@
             window.myLibraryChart.destroy();
         }
 
-        // Generate Labels: Last 7 Days
         const labels = [];
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const today = new Date();
@@ -383,7 +430,7 @@
                 datasets: [
                     {
                         label: 'Borrowed Books',
-                        data: borrowedArray, // Using real array passed from C#
+                        data: borrowedArray,
                         borderColor: '#fd7e14',
                         backgroundColor: 'rgba(253, 126, 20, 0.1)',
                         tension: 0.4,
@@ -393,7 +440,7 @@
                     },
                     {
                         label: 'Available Books',
-                        data: availableArray, // Using real array passed from C#
+                        data: availableArray,
                         borderColor: '#007bff',
                         backgroundColor: 'rgba(0, 123, 255, 0.1)',
                         tension: 0.4,
@@ -406,16 +453,9 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { mode: 'index', intersect: false }
-                },
+                plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#f0f0f0' },
-                        suggestedMax: Math.max(...borrowedArray, ...availableArray) + 2
-                    },
+                    y: { beginAtZero: true, grid: { color: '#f0f0f0' }, suggestedMax: Math.max(...borrowedArray, ...availableArray) + 2 },
                     x: { grid: { display: false } }
                 }
             }
