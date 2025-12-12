@@ -90,11 +90,13 @@
                     </button>
                 </div>
             </div>
-
-            <div class="alert-banner">
-                <i class="fa-solid fa-triangle-exclamation"></i>
+            @if (OverdueList.Count >= 5)
+            {
+                <div class="alert-banner">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
                 <span><strong>Overdue spike:</strong> @OverdueList.Count books overdue for 14+ days. Consider sending reminders.</span>
             </div>
+            }
 
             <div class="charts-row">
                 <div class="card chart-card">
@@ -134,7 +136,6 @@
                         @if (string.IsNullOrWhiteSpace(searchTerm))
                         {
                             <h3><i class="fa-regular fa-star"></i> Currently Borrowed Books</h3>
-                            <span class="sub-text">Currently Active Loans</span>
                         }
                         else
                         {

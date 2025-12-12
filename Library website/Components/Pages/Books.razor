@@ -57,9 +57,13 @@
             <div class="filter-actions">
                 <select class="form-select" @bind="SelectedCategory">
                     <option value="All Categories">All Categories</option>
-                    <option value="Fiction">Fiction</option>
-                    <option value="Science">Science</option>
-                    <option value="Sci-Fi">Sci-Fi</option>
+                    @for (int i = 0; i <= catsnum; i++)
+                    {
+                        <option value="Fiction">Fiction</option>
+                        <option value="Science">Science</option>
+                        <option value="Sci-Fi">Sci-Fi</option>
+                    @*<option *@
+                    }
                 </select>
                 <select class="form-select" @bind="SelectedStatus">
                     <option value="All Status">All Status</option>
@@ -178,12 +182,7 @@
                     </div>
                     <div class="input-group">
                         <label>Category</label>
-                        <select class="form-control" @bind="newBook.Categyry">
-                            <option value="">Select Category</option>
-                            <option value="Fiction">Fiction</option>
-                            <option value="Science">Science</option>
-                            <option value="Sci-Fi">Sci-Fi</option>
-                        </select>
+                        <input type="text" class="form-control" @bind="newBook.Categyry" placeholder="Category" />
                     </div>
                 </div>
             </div>
@@ -202,6 +201,7 @@
     private List<Book> allBooks = new List<Book>();
     private Book newBook = new Book();
     private bool ShowModal = false;
+    private int catsnum = 0; //total categories
 
     // -- Filter & Pagination State --
     private string _searchTerm = "";
