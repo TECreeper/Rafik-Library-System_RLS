@@ -15,10 +15,7 @@
             <h3><i class="fa-solid fa-chart-simple"></i> Library Admin</h3>
         </div>
 
-        <div class="search-box-sidebar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search catalog..." @bind="searchTerm" @bind:event="oninput" />
-        </div>
+
 
         <nav class="sidebar-nav">
             <p class="nav-label">Navigation</p>
@@ -93,19 +90,21 @@
                     </button>
                 </div>
             </div>
-
-            <div class="alert-banner">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <span><strong>Overdue spike:</strong> @OverdueList.Count books overdue for 14+ days. Consider sending reminders.</span>
+            @if (OverdueList.Count >= 5)
+            {
+                <div class="alert-banner">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                <span><strong>Overdue spike:</strong> @OverdueList.Count books overdue Consider sending reminders.</span>
             </div>
+            }
 
             <div class="charts-row">
                 <div class="card chart-card">
                     <div class="card-header">
                         <h3>Weekly Activity</h3>
                         <div class="legend">
-                            <span class="dot blue"></span> Borrowed
-                            <span class="dot orange"></span> Available
+                            <span class="dot orange"></span> Borrowed
+                            <span class="dot blue"></span> Available
                         </div>
                     </div>
                     <div class="chart-container" style="height: 200px; width: 100%;">
@@ -136,15 +135,16 @@
                         <h3><i class="fa-regular fa-star"></i> Currently Borrowed Books</h3>
      
                     </div>
+                    
                     <div class="recently-added-section">
                         <div class="books-grid">
-                            @if (MostBorrowedBooks.Any())
+                                @if (CurrentlyBorrowedBooks.Any())
                             {
-                                @foreach (var book in MostBorrowedBooks)
+                                    @foreach (var book in CurrentlyBorrowedBooks)
                                 {
                                     <div class="list-item">
                                         <div style="background:#eef2ff; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#007bff; font-weight:bold;">
-                                            #@(MostBorrowedBooks.IndexOf(book) + 1)
+                                                #@(CurrentlyBorrowedBooks.IndexOf(book) + 1)
                                         </div>
                                         <div>
                                             <h4 class="title" style="margin:0;">@book.Title</h4>
@@ -236,14 +236,14 @@
     private int BorrowedCount = 0;
     private int AvailableCount = 0;
     private List<Book> Books = new List<Book>();
-    private List<Book> MostBorrowedBooks = new List<Book>();
+    private List<Book> CurrentlyBorrowedBooks = new List<Book>();
     private List<Member> Members = new List<Member>();
     private Book newBook = new Book();
     private bool ShowModal = false;
     private int totalBookCount = 0;
     private int totalMemberCount = 0;
     private string searchTerm = "";
-
+    
     // Arrays for the chart
     private int[] weeklyBorrowedData = new int[7];
     private int[] weeklyAvailableData = new int[7];
@@ -278,7 +278,7 @@
         if (loadedBooks != null)
         {
             Books = loadedBooks.OrderByDescending(b => b.Id).ToList();
-            MostBorrowedBooks = loadedBooks.Where(b => b.IsBorrowed).Take(5).ToList();
+            CurrentlyBorrowedBooks = loadedBooks.Where(b => b.IsBorrowed).Take(5).ToList();
         }
 
         // Get Real History Data
@@ -384,21 +384,21 @@
                     {
                         label: 'Borrowed Books',
                         data: borrowedArray, // Using real array passed from C#
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#007bff',
-                        pointRadius: 4
-                    },
-                    {
-                        label: 'Available Books',
-                        data: availableArray, // Using real array passed from C#
                         borderColor: '#fd7e14',
                         backgroundColor: 'rgba(253, 126, 20, 0.1)',
                         tension: 0.4,
                         fill: true,
                         pointBackgroundColor: '#fd7e14',
+                        pointRadius: 4
+                    },
+                    {
+                        label: 'Available Books',
+                        data: availableArray, // Using real array passed from C#
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#007bff',
                         pointRadius: 4
                     }
                 ]
