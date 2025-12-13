@@ -86,9 +86,21 @@ private readonly LibraryDbContext _context;
         {
             // Selects the category column, removes duplicates, and counts the result
             return await _context.Books
-                                 .Select(b => b.Categyry) // Note: Ensure this matches your property name (Categyry or Category)
+                                 .Select(b => b.Categyry) 
                                  .Distinct()
                                  .CountAsync();
+        }
+        public async Task<List<string>> GetAllCatsAsync()
+        {
+            var Cats = await _context.Books
+                // 1. Select only the Categyry column
+                .Select(b => b.Categyry)
+                // 2. Ensure you don't get duplicate values
+                .Distinct()
+                // 3. Execute the query and convert to a list
+                .ToListAsync();
+
+            return Cats;
         }
         public async Task<int> GetCountBorrowingAsync(bool Borrowing)
         {

@@ -5,6 +5,7 @@
         public int Id { get; set; } // Primary Key
         public string Title { get; set; } = string.Empty;
         public string Author { get; set; } = string.Empty;
+
         public int Price { get; set; }
         public bool IsBorrowed { get; set; }
         public DateTime? BorrowDate { get; set; } // When it was issued

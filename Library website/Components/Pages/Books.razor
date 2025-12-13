@@ -55,15 +55,16 @@
                 <input type="text" placeholder="Search by title, author, ID..." @bind="SearchTerm" @bind:event="oninput" />
             </div>
             <div class="filter-actions">
+                
                 <select class="form-select" @bind="SelectedCategory">
                     <option value="All Categories">All Categories</option>
-                    @for (int i = 0; i <= catsnum; i++)
+                    @if (cats != null)
                     {
-                        <option value="Fiction">Fiction</option>
-                        <option value="Science">Science</option>
-                        <option value="Sci-Fi">Sci-Fi</option>
-                    @*<option *@
-                    }
+                        @foreach (var category in cats)
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    } 
                 </select>
                 <select class="form-select" @bind="SelectedStatus">
                     <option value="All Status">All Status</option>
@@ -141,7 +142,7 @@
                 <div class="page-buttons">
                     <button @onclick="PrevPage" disabled="@(CurrentPage == 1)">&lt;</button>
 
-                    @for (int i = 1; i <= TotalPages; i++)
+                    @for(int i = 1; i <= TotalPages; i++)
                     {
                         int pageNumber = i;
                         <button class="@(CurrentPage == pageNumber ? "active" : "")"
@@ -201,9 +202,8 @@
     private List<Book> allBooks = new List<Book>();
     private Book newBook = new Book();
     private bool ShowModal = false;
-    private int catsnum = 0; //total categories
-
-    // -- Filter & Pagination State --
+    private int totalcats ; //total categories
+    public List<string> cats { get; set; } = new List<string>();    // -- Filter & Pagination State --
     private string _searchTerm = "";
     public string SearchTerm
     {
@@ -275,9 +275,16 @@
 
     protected override async Task OnInitializedAsync()
     {
+        totalcats = await BookService.GetTotalCategoriesAsync();
+        
+            cats = await BookService.GetAllCatsAsync();
+        
+
         await LoadBooks();
     }
 
+
+ 
     private async Task LoadBooks()
     {
         var dbBooks = await BookService.GetBooksAsync();
@@ -329,9 +336,9 @@
 
     private async Task SaveBook()
     {
-        if (string.IsNullOrWhiteSpace(newBook.Title) || string.IsNullOrWhiteSpace(newBook.Author))
+        if (string.IsNullOrWhiteSpace(newBook.Title) || string.IsNullOrWhiteSpace(newBook.Author)|| string.IsNullOrWhiteSpace(newBook.Categyry))
         {
-            await JSRuntime.InvokeVoidAsync("alert", "Please enter Title and Author.");
+            await JSRuntime.InvokeVoidAsync("alert", "Please enter Title, Author and Categorey.");
             return;
         }
 
