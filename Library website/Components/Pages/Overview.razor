@@ -249,12 +249,8 @@
                     </div>
                     <div class="input-group">
                         <label>Category</label>
-                        <select class="form-control" @bind="newBook.Categyry">
-                            <option value="">Select Category</option>
-                            <option value="Fiction">Fiction</option>
-                            <option value="Science">Science</option>
-                            <option value="Academic">Academic</option>
-                        </select>
+                        <input type="text" class="form-control" @bind="newBook.Categyry" placeholder="Category" />
+
                     </div>
                 </div>
             </div>
