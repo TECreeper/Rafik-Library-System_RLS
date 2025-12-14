@@ -1,13 +1,5 @@
 ﻿@inherits LayoutComponentBase
-<div class="login-wrapper" style="min-height: 100vh; display: flex; justify-content: center; align-items: center; background-color: var(--main-bg);">
+<div class="login-wrapper" style="min-height: 100vh; display: flex; justify-content: center; align-items: center;         background-image: url(https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg);
+  background-size: cover;">
     @Body
 </div>
-
-<script>
-    (function() {
-        var savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
-    })();
-</script> 

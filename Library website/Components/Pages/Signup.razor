@@ -83,9 +83,17 @@
         text-align: center;
     }
 
+    .login-header h2 {
+        color: var(--text-color);
+    }
+    .login-header p {
+        color: var(--text-color);
+	}
+
     .input-group {
         margin-bottom: 15px;
         text-align: left;
+		align-items: center;
     }
 
         .input-group label {
@@ -94,6 +102,7 @@
             color: var(--text-main);
             font-weight: bold;
             font-size: 0.9rem;
+            padding-right: 5px;
         }
 
     .form-control {
@@ -139,3 +148,11 @@
             color: #155724;
         }
 </style>
+<script>
+    (function() {
+        var savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    })();
+</script> 

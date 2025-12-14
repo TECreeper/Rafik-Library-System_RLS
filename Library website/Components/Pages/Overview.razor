@@ -116,16 +116,11 @@
                     <div class="card-header">
                         <h3>Books per Category</h3>
                     </div>
-                    <div class="chart-placeholder bar-chart-mockup">
-                        <div class="bar" style="height: 60%; background: #007bff;"></div>
-                        <div class="bar" style="height: 40%; background: #ffc107;"></div>
-                        <div class="bar" style="height: 80%; background: #28a745;"></div>
-                        <div class="bar" style="height: 30%; background: #fd7e14;"></div>
-                        <div class="bar" style="height: 50%; background: #dc3545;"></div>
+
+                    <div class="chart-container" style="height: 200px; width: 100%;">
+                        <canvas id="categoryChart"></canvas>
                     </div>
-                    <div class="months bar-labels">
-                        <span>Fic</span><span>NonFic</span><span>Kids</span><span>Acad</span><span>Other</span>
-                    </div>
+
                 </div>
             </div>
 
@@ -249,8 +244,14 @@
                     </div>
                     <div class="input-group">
                         <label>Category</label>
-                        <input type="text" class="form-control" @bind="newBook.Categyry" placeholder="Category" />
-
+                        <select class="form-control" @bind="newBook.Categyry">
+                            <option value="">Select Category</option>
+                            <option value="Fiction">Fiction</option>
+                            <option value="Science">Science</option>
+                            <option value="Kids">Kids</option>
+                            <option value="Academic">Academic</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -350,6 +351,7 @@
             }
 
             await JSRuntime.InvokeVoidAsync("renderRealWeeklyChart", weeklyBorrowedData, weeklyAvailableData);
+            await UpdateCategoryChart();
         }
     }
 
@@ -382,6 +384,9 @@
 
             var history = await BookService.GetWeeklyStatsAsync();
             await JSRuntime.InvokeVoidAsync("renderRealWeeklyChart", history.borrowedHistory, history.availableHistory);
+            await UpdateCategoryChart();
+
+            newBook = new Book();
             CloseModal();
         }
         catch (Exception ex)
@@ -396,6 +401,29 @@
         var theme = isDarkMode ? "dark" : "light";
         await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", theme);
         await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", theme);
+    }
+    // 1. تعريف دالة لحساب وإرسال البيانات
+    private async Task UpdateCategoryChart()
+    {
+        // نحضر كل الكتب (أو نستخدم Books الموجودة بالفعل لو كانت تحتوي كل الداتا)
+        // سنقوم بفلترتها بناءً على الأسماء الموجودة في الـ Modal
+
+        int countFic = Books.Count(b => b.Categyry == "Fiction");
+        int countSci = Books.Count(b => b.Categyry == "Science");
+        int countKids = Books.Count(b => b.Categyry == "Kids"); // تأكد من إضافته في الـ Modal لو أردت
+        int countAcad = Books.Count(b => b.Categyry == "Academic");
+
+        // أي حاجة غير دول نعتبرها Other
+        int countOther = Books.Count(b => b.Categyry != "Fiction" &&
+                                          b.Categyry != "Science" &&
+                                          b.Categyry != "Kids" &&
+                                          b.Categyry != "Academic");
+
+        // ترتيب الأرقام في المصفوفة يجب أن يطابق ترتيب الـ Labels في الـ JavaScript
+        int[] categoryData = new int[] { countFic, countSci, countKids, countAcad, countOther };
+
+        // استدعاء دالة الجافاسكريبت
+        await JSRuntime.InvokeVoidAsync("renderCategoryChart", categoryData);
     }
 }
 
@@ -1032,12 +1060,13 @@
 
 
     .icon-btn {
-        background: white;
+        background: var(--border-color);
         border: 1px solid #ddd;
         width: 40px;
         height: 40px;
         border-radius: 50%;
         cursor: pointer;
+        color: var(--text-color);
     }
 
 
@@ -1367,5 +1396,51 @@
         }
 
     })();
+        window.renderCategoryChart = (dataValues) => {
+        const ctx = document.getElementById('categoryChart');
+        if (!ctx) return;
 
+        // تدمير الشارت القديم إذا كان موجوداً لتجنب التداخل
+        if (window.myCategoryChart) {
+            window.myCategoryChart.destroy();
+        }
+
+        window.myCategoryChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                // أسماء التصنيفات كما تظهر في الـ Modal
+                labels: ['Fiction', 'Science', 'Kids', 'Academic', 'Other'],
+                datasets: [{
+                    label: 'Books Count',
+                    data: dataValues, // هذه المصفوفة تأتي من الـ C#
+                    backgroundColor: [
+                        '#007bff', // لون Fiction
+                        '#ffc107', // لون Science
+                        '#28a745', // لون Kids
+                        '#fd7e14', // لون Academic
+                        '#dc3545'  // لون Other
+                    ],
+                    borderRadius: 5,
+                    barThickness: 30
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false } // إخفاء العنوان لأنه موجود في الهيدر
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f0f0f0' },
+                        ticks: { stepSize: 1 } // التأكد من أن الأرقام صحيحة وليست كسور
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    };
 </script>

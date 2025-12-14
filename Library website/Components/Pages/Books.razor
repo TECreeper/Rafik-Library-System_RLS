@@ -17,7 +17,7 @@
         
         <nav class="sidebar-nav">
             <p class="nav-label">Navigation</p>
-            <a href="/" class="nav-item"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+            <a href="/dashboard" class="nav-item"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
             <a href="#" class="nav-item active"><i class="fa-solid fa-book"></i> Books</a>
             <a href="/members" class="nav-item"><i class="fa-solid fa-users"></i> Members</a>
             <a href="/borrow" class="nav-item"><i class="fa-solid fa-arrow-right-arrow-left"></i> Borrow & Returns</a>
@@ -851,12 +851,13 @@
     }
 
     .icon-btn {
-        background: white;
+        background: var(--border-color);
         border: 1px solid #ddd;
         width: 40px;
         height: 40px;
         border-radius: 50%;
         cursor: pointer;
+        color: var(--text-color);
     }
 
     @@keyframes slideDown {

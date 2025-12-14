@@ -62,6 +62,7 @@ h1:focus {
     --text-color: black;
     --danger: red;
     --warning: #f57c00;
+    --card-bg: white;
 }
 
 [data-theme="dark"] {
