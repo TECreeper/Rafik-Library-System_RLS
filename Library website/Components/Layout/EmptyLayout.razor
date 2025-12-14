@@ -1,14 +1,2 @@
 ﻿@inherits LayoutComponentBase
-
-<div class="login-wrapper" style="min-height: 100vh; display: flex; justify-content: center; align-items: center; background-color: var(--main-bg);">
-    @Body
-</div>
-
-<script>
-    (function() {
-        var savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
-    })();
-</script>
+@Body
