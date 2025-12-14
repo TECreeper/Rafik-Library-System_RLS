@@ -18,7 +18,7 @@
         <nav class="sidebar-nav">
             <p class="nav-label">Navigation</p>
             <a href="/dashboard" class="nav-item"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
-            <a href="#" class="nav-item active"><i class="fa-solid fa-book"></i> Books</a>
+            <a href="/dashboard" class="nav-item active"><i class="fa-solid fa-book"></i> Books</a>
             <a href="/members" class="nav-item"><i class="fa-solid fa-users"></i> Members</a>
             <a href="/borrow" class="nav-item"><i class="fa-solid fa-arrow-right-arrow-left"></i> Borrow & Returns</a>
             <p class="nav-label">Alerts</p>
@@ -784,7 +784,7 @@
     }
 
     .modal-box {
-        background: white;
+        background: var(--background);
         width: 450px;
         border-radius: 12px;
         overflow: hidden;
@@ -796,12 +796,12 @@
         border-bottom: 1px solid #eee;
         display: flex;
         justify-content: space-between;
-        background: #f8f9fa;
+        background: var(--background);
     }
 
         .modal-header h3 {
             margin: 0;
-			color: black;
+			color: var(--text-color);
         }
 
     .close-btn {
@@ -825,7 +825,7 @@
         margin-right: 6px;
         font-weight: 600;
         font-size: 0.9rem;
-		color: black;
+		color: var(--text-color);
     }
 
     .form-control {

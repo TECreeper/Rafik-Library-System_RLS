@@ -20,7 +20,7 @@
             <p class="nav-label">Navigation</p>
             <a href="/dashboard" class="nav-item"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
             <a href="/books" class="nav-item"><i class="fa-solid fa-book"></i> Books</a>
-            <a href="#" class="nav-item active"><i class="fa-solid fa-users"></i> Members</a>
+            <a href="/dashboard" class="nav-item active"><i class="fa-solid fa-users"></i> Members</a>
             <a href="/borrow" class="nav-item"><i class="fa-solid fa-arrow-right-arrow-left"></i> Borrow & Returns</a>
             <p class="nav-label">Alerts</p>
             <a href="/overdue" class="nav-item alert-link">
@@ -421,7 +421,7 @@
     body {
         margin: 0;
         background-color: var(--main-bg);
-        color: var(--text-dark);
+        color: var(--text-color);
     }
 
     .dashboard-container {
@@ -689,7 +689,7 @@
     }
 
     .modal-box {
-        background: white;
+        background: var(--background);
         width: 450px;
         border-radius: 12px;
         overflow: hidden;
@@ -701,7 +701,7 @@
         border-bottom: 1px solid #eee;
         display: flex;
         justify-content: space-between;
-        background: #f8f9fa;
+        background: var(--bav);
     }
 
         .modal-header h3 {
