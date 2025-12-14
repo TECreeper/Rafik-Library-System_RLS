@@ -1,4 +1,6 @@
-﻿namespace MyLibraryApp.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MyLibraryApp.Models
 {
     public class Book
     {
@@ -28,6 +30,23 @@
         public string MobileNumber { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
+    }
+    public class User
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [Required] // مطلوب
+        public string FullName { get; set; } = "";
+
+        [Required]
+        [EmailAddress] // يجب أن يكون صيغة إيميل صحيحة
+        public string Email { get; set; } = "";
+
+        [Required]
+        public string Password { get; set; } = ""; // سيتم حفظها مشفرة وليست نصاً عادياً
+
+        public string Role { get; set; } = "Admin"; // لتحديد الصلاحيات مستقبلاً
     }
 }
 

@@ -1,0 +1,131 @@
+﻿@page "/"
+@layout Library_website.Components.Layout.EmptyLayout
+@inject MyLibraryApp.Data.UserService UserService
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+
+<div class="login-box">
+    <div class="login-header">
+        <div style="font-size: 2rem; color: var(--primary); margin-bottom: 10px;"><i class="fa-solid fa-user-lock"></i></div>
+        <h2>Welcome Back</h2>
+        <p>Please sign in</p>
+    </div>
+
+    <div class="login-form">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert-box error">@errorMessage</div>
+        }
+
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" class="form-control" placeholder="name@example.com" @bind="email" />
+        </div>
+
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" class="form-control" placeholder="******" @bind="password" @onkeypress="HandleKeyPress" />
+        </div>
+
+        <button class="btn btn-primary login-btn" @onclick="ExecuteLogin">Sign In</button>
+
+        <div class="login-footer">
+            <a href="/signup">Don't have an account? Sign Up</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string email = "";
+    private string password = "";
+    private string errorMessage = "";
+
+    private async Task ExecuteLogin()
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Please enter email and password."; return;
+        }
+
+        // هنا السحر: نرسل البيانات لقاعدة البيانات للتأكد
+        var user = await UserService.LoginUserAsync(email, password);
+
+        if (user != null)
+        {
+            NavManager.NavigateTo("/dashboard");
+        }
+        else
+        {
+            errorMessage = "Invalid email or password!";
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await ExecuteLogin();
+    }
+}
+
+<style>
+    /* نفس الستايل السابق */
+    .login-box {
+        background: var(--card-bg);
+        width: 400px;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+        text-align: center;
+    }
+
+    .input-group {
+        margin-bottom: 15px;
+        text-align: left;
+    }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-main);
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background: var(--input-bg);
+        color: var(--text-main);
+    }
+
+    .login-btn {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        cursor: pointer;
+        border-radius: 8px;
+        border: none;
+        background: var(--primary);
+        color: white;
+        font-weight: bold;
+    }
+
+    .login-footer {
+        margin-top: 20px;
+        font-size: 0.9rem;
+    }
+
+    .alert-box {
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+    }
+
+        .alert-box.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+</style>

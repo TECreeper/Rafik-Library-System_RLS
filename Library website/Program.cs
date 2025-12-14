@@ -20,6 +20,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<LibraryDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddScoped<UserService>();
 var app = builder.Build();
 
 
