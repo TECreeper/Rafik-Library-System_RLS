@@ -306,9 +306,14 @@
             return;
         }
 
-        if (!int.TryParse(form.NationalId, out var parsedNationalId) || !int.TryParse(form.Age, out var parsedAge))
+        if (!int.TryParse(form.Age, out var parsedAge))
         {
-            await JSRuntime.InvokeVoidAsync("alert", "National ID and Age must be valid numbers.");
+            await JSRuntime.InvokeVoidAsync("alert", "Age must be valid number.");
+            return;
+        }
+        if (form.NationalId.Length != 14 || !form.NationalId.All(char.IsDigit))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "National ID must be a valid 14-digit number.");
             return;
         }
 
@@ -316,7 +321,7 @@
         {
             Id = form.Id,
             Name = form.Name.Trim(),
-            NationalId = parsedNationalId,
+            NationalId = form.NationalId.ToString(),
             Age = parsedAge,
             MobileNumber = form.MobileNumber?.Trim() ?? string.Empty,
             Email = form.Email?.Trim() ?? string.Empty,

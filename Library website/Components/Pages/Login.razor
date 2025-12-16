@@ -2,6 +2,7 @@
 @layout Library_website.Components.Layout.LoginLayout
 @inject MyLibraryApp.Data.UserService UserService
 @inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <div class="login-box">
@@ -44,14 +45,17 @@
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
-            errorMessage = "Please enter email and password."; return;
+            errorMessage = "Please enter email and password.";
+            return;
         }
 
-        // هنا السحر: نرسل البيانات لقاعدة البيانات للتأكد
         var user = await UserService.LoginUserAsync(email, password);
 
         if (user != null)
         {
+            // 2. التعديل هنا: حفظ رقم المستخدم في المتصفح
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userId", user.Id.ToString());
+
             NavManager.NavigateTo("/dashboard");
         }
         else

@@ -9,42 +9,53 @@ namespace MyLibraryApp.Data
     {
         private readonly LibraryDbContext _context;
 
+        // 1. خاصية لتخزين المستخدم المسجل دخوله حالياً
+        public User? CurrentUser { get; private set; }
+
         public UserService(LibraryDbContext context)
         {
             _context = context;
         }
 
-        // 1. دالة تسجيل حساب جديد
         public async Task<string> RegisterUserAsync(User user)
         {
-            // نتأكد أولاً أن الإيميل غير مستخدم من قبل
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
             {
                 return "This email is already registered.";
             }
 
-            // نشفر الباسوورد قبل الحفظ
             user.Password = HashPassword(user.Password);
-
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             return "Success";
         }
 
-        // 2. دالة تسجيل الدخول
         public async Task<User?> LoginUserAsync(string email, string password)
         {
-            // نشفر الباسوورد المدخل لنقارنه بالمحفوظ في الداتا بيز
             string hashedPassword = HashPassword(password);
 
-            // نبحث عن مستخدم يطابق الإيميل والباسوورد المشفر
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == email && u.Password == hashedPassword);
 
+            // 2. إذا نجح الدخول، احفظ المستخدم في المتغير
+            if (user != null)
+            {
+                CurrentUser = user;
+            }
+
             return user;
         }
+        public async Task<User?> GetUserByIdAsync(int id)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        }
 
-        // دالة التشفير (تمنع قراءة الباسوورد لو تم سرقة الداتا بيز)
+        // دالة للخروج
+        public void Logout()
+        {
+            CurrentUser = null;
+        }
+
         private string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
@@ -52,6 +63,7 @@ namespace MyLibraryApp.Data
                 var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
                 return Convert.ToBase64String(bytes);
             }
+
         }
     }
 }
