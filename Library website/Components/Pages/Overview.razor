@@ -116,9 +116,11 @@
                     <div class="card-header">
                         <h3>Books per Category</h3>
                     </div>
+
                     <div class="chart-container" style="height: 200px; width: 100%;">
                         <canvas id="categoryChart"></canvas>
                     </div>
+
                 </div>
             </div>
 
@@ -242,7 +244,7 @@
                             <option value="">Select Category</option>
                             <option value="Fiction">Fiction</option>
                             <option value="Science">Science</option>
-                            <option value="Kids">Kids</option>
+                            <option value="Nonfiction">Nonfiction</option>
                             <option value="Academic">Academic</option>
                             <option value="Other">Other</option>
                         </select>
@@ -325,6 +327,7 @@
 
             // 2. استرجاع المستخدم المسجل دخوله
             var userIdString = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userId");
+            await UpdateCategoryChart();
 
             if (!string.IsNullOrEmpty(userIdString) && int.TryParse(userIdString, out int userId))
             {
@@ -348,7 +351,46 @@
     private async Task CalculateOverdueData() { /*...*/ }
     private void OpenModal() { newBook = new Book(); ShowModal = true; }
     private void CloseModal() { ShowModal = false; }
-    private async Task SaveBook() { /*...*/ }
+    private async Task SaveBook()
+    {
+        if (string.IsNullOrWhiteSpace(newBook.Title) || string.IsNullOrWhiteSpace(newBook.Author)) { CloseModal(); return; }
+
+        try
+
+        {
+
+            await BookService.AddBookAsync(newBook);
+
+            Books.Insert(0, newBook);
+
+            totalBookCount++;
+
+            AvailableCount++;
+
+            newBook = new Book();
+
+
+
+            var history = await BookService.GetWeeklyStatsAsync();
+
+            await JSRuntime.InvokeVoidAsync("renderRealWeeklyChart", history.borrowedHistory, history.availableHistory);
+
+            await UpdateCategoryChart();
+
+            newBook = new Book();
+            CloseModal();
+
+        }
+
+        catch (Exception ex)
+
+        {
+
+            await JSRuntime.InvokeVoidAsync("alert", "Error: " + ex.Message);
+
+        }
+        
+    }
     private async Task ToggleDarkMode()
     {
         isDarkMode = !isDarkMode;
@@ -356,7 +398,29 @@
         await JSRuntime.InvokeVoidAsync("document.documentElement.setAttribute", "data-theme", theme);
         await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", theme);
     }
-    private async Task UpdateCategoryChart() { /*...*/ }
+    // 1. تعريف دالة لحساب وإرسال البيانات
+    private async Task UpdateCategoryChart()
+    {
+        // نحضر كل الكتب (أو نستخدم Books الموجودة بالفعل لو كانت تحتوي كل الداتا)
+        // سنقوم بفلترتها بناءً على الأسماء الموجودة في الـ Modal
+
+        int countFic = Books.Count(b => b.Categyry == "Fiction");
+        int countSci = Books.Count(b => b.Categyry == "Science");
+        int countKids = Books.Count(b => b.Categyry == "Nonfiction"); // تأكد من إضافته في الـ Modal لو أردت
+        int countAcad = Books.Count(b => b.Categyry == "Academic");
+
+        // أي حاجة غير دول نعتبرها Other
+        int countOther = Books.Count(b => b.Categyry != "Fiction" &&
+                                          b.Categyry != "Science" &&
+                                          b.Categyry != "Nonfiction" &&
+                                          b.Categyry != "Academic");
+
+        // ترتيب الأرقام في المصفوفة يجب أن يطابق ترتيب الـ Labels في الـ JavaScript
+        int[] categoryData = new int[] { countFic, countSci, countKids, countAcad, countOther };
+
+        // استدعاء دالة الجافاسكريبت
+        await JSRuntime.InvokeVoidAsync("renderCategoryChart", categoryData);
+    }
 }
 
 <script>
@@ -430,7 +494,7 @@
         window.myCategoryChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Fiction', 'Science', 'Kids', 'Academic', 'Other'],
+                labels: ['Fiction', 'Science', 'Nonfiction', 'Academic', 'Other'],
                 datasets: [{
                     label: 'Books Count',
                     data: dataValues,
@@ -1373,7 +1437,7 @@
             type: 'bar',
             data: {
                 // أسماء التصنيفات كما تظهر في الـ Modal
-                labels: ['Fiction', 'Science', 'Kids', 'Academic', 'Other'],
+                labels: ['Fiction', 'Science', 'Nonfiction', 'Academic', 'Other'],
                 datasets: [{
                     label: 'Books Count',
                     data: dataValues, // هذه المصفوفة تأتي من الـ C#
