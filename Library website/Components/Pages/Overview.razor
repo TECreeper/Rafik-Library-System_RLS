@@ -129,7 +129,7 @@
                     <div class="card-header">
                         @if (string.IsNullOrWhiteSpace(searchTerm))
                         {
-                            <h3><i class="fa-regular fa-star"></i> Most Borrowed Books</h3>
+                            <h3><i class="fa-regular fa-star"></i> Recently Borrowed Books</h3>
                         }
                         else
                         {
@@ -240,14 +240,9 @@
                     </div>
                     <div class="input-group">
                         <label>Category</label>
-                        <select class="form-control" @bind="newBook.Categyry">
-                            <option value="">Select Category</option>
-                            <option value="Fiction">Fiction</option>
-                            <option value="Science">Science</option>
-                            <option value="Nonfiction">Nonfiction</option>
-                            <option value="Academic">Academic</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <input class="form-control" placeholder="Category" @bind="newBook.Categyry">
+                            
+                       
                     </div>
                 </div>
             </div>
@@ -353,8 +348,11 @@
     private void CloseModal() { ShowModal = false; }
     private async Task SaveBook()
     {
-        if (string.IsNullOrWhiteSpace(newBook.Title) || string.IsNullOrWhiteSpace(newBook.Author)) { CloseModal(); return; }
-
+        if (string.IsNullOrWhiteSpace(newBook.Title) || string.IsNullOrWhiteSpace(newBook.Author) || string.IsNullOrWhiteSpace(newBook.Categyry))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Please enter Title, Author and Categorey.");
+            return;
+        }
         try
 
         {

@@ -140,14 +140,14 @@ private readonly LibraryDbContext _context;
         }
         public async Task<string> CheckoutBookAsync(string bookInput, string memberInput, DateTime dueDate)
         {
-            // A. Find the Book (Try ID first, then Title/ISBN)
+            // A. Find the Book (Title/ID)
             var book = await _context.Books
                 .FirstOrDefaultAsync(b => b.Id.ToString() == bookInput || b.Title == bookInput );
 
             if (book == null) return "Book not found.";
             if (book.IsBorrowed) return "Book is already borrowed.";
 
-            // B. Find the Member (Try ID first, then Name)
+            // B. Find the Member (ID/Name)
             var member = await _context.Members
                 .FirstOrDefaultAsync(m => m.Id.ToString() == memberInput || m.Name == memberInput);
 
@@ -186,7 +186,6 @@ private readonly LibraryDbContext _context;
         }
 
 
-        // In BookService.cs
 
         public async Task<List<Book>> GetOverdueBooksAsync()
         {
@@ -197,16 +196,14 @@ private readonly LibraryDbContext _context;
         }
         public async Task UpdateBookAsync(Book book)
         {
-            // 1. Check if the database is already holding onto a book with this ID
             var existingTracked = _context.Books.Local.FirstOrDefault(b => b.Id == book.Id);
 
-            // 2. If found, tell the database to stop tracking it (Detach)
             if (existingTracked != null)
             {
                 _context.Entry(existingTracked).State = EntityState.Detached;
             }
 
-            // 3. Now we can safely update the new copy
+            
             _context.Books.Update(book);
             await _context.SaveChangesAsync();
         }
